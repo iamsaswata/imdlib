@@ -6,7 +6,7 @@ def test_read():
     cwd = os.path.dirname(os.path.abspath(__file__))
     #/home/travis/build/iamsaswata/cct_nn
     a = imd.open_data((2018, 2018), 'rain','yearwise', cwd)
-    assert a.data.shape == (365,135,1290)
+    assert a.data.shape == (365,135,129)
 
 
 #a.shape

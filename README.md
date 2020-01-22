@@ -1,7 +1,7 @@
 # imdlib
 
-[![Build Status](https://travis-ci.org/iamsaswata/cct_nn.svg?branch=master)](https://travis-ci.org/iamsaswata/cct_nn)
-![GitHub](https://img.shields.io/github/license/iamsaswata/cct_nn)
+[![Build Status](https://travis-ci.org/iamsaswata/imdlib.svg?branch=master)](https://travis-ci.org/iamsaswata/imdlib)
+![GitHub](https://img.shields.io/github/license/iamsaswata/imdlib)
 ![PyPI](https://img.shields.io/pypi/v/imdlib)
 
 This is a python package to handle binary grided data from Indian Meterological department (IMD).
