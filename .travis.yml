@@ -21,8 +21,7 @@ install:
 before_script:
 - conda install -y conda-build
 - conda install -y anaconda-client
-script:
-- pytest test/test.py
+script: pytest test/test.py
 after_success:
 - echo "Tests completed successfully!"
 after_failure:
@@ -31,8 +30,7 @@ deploy:
   provider: pypi
   user: __token__
   password:
-  secure: OBc3A5ev15krWGKKApUjjE8pYNmEI3h3A/OXcc/KlnlW7MBksvrgzNPXbEhaUJ1/cYyzCAxJhOozFP8HO0Np80KkXZt26MCohhBTpDTcnzOm0JpE+wZBg+FQCRXNuELkwNj7B3mlrgZcXys3/qyjQ8CyqIg/4MAejIS/M7yPFgocJ+wdYlLPR4Q3GdnVoIv2X2GScPUFybpQ9PKxgZaB83amhXDKlphzFmxPoHIsak2fKZ7wbzFfWGRHL1pqk897fV+WSm+Oc4086NSYg+1pq5v45hCo3c5EGhdXf94Om554YDZd/YEq+EVzvHJ3noijjFFR1F51R9s5CBlObpV+WIF2xJRGm58oI3YkwSrNpLYKiNSUjqLgcLguMhwk+1VUCyCIrK2tOY2kAeXiBJgORl+MOigr66nJhGmNjdOVZ0ALputHHtz+4FqayFNR6fWvtnrS9O9NQtq9q5NZ4rQD90+ZOPcFrD87HujWL1aZGPfZt0IXlZQKTl5owV5JKKcMDIi7e8s9WwYX/IuG27yNLmbcb1I3K/nAS3B4Zg4ZCXqkbXBJekpPSVuYszFUlywzZmV8KqB5aYkBsur+n9FYkUuSGO7RlgwYPRnie6qSK1hXTWrZo0QsiDfhzwlw0rXiJxI2qF3/JDj39CJ1PeLvH5G9UnOJdINXKCBz7vgxoy4=
+    secure: OBc3A5ev15krWGKKApUjjE8pYNmEI3h3A/OXcc/KlnlW7MBksvrgzNPXbEhaUJ1/cYyzCAxJhOozFP8HO0Np80KkXZt26MCohhBTpDTcnzOm0JpE+wZBg+FQCRXNuELkwNj7B3mlrgZcXys3/qyjQ8CyqIg/4MAejIS/M7yPFgocJ+wdYlLPR4Q3GdnVoIv2X2GScPUFybpQ9PKxgZaB83amhXDKlphzFmxPoHIsak2fKZ7wbzFfWGRHL1pqk897fV+WSm+Oc4086NSYg+1pq5v45hCo3c5EGhdXf94Om554YDZd/YEq+EVzvHJ3noijjFFR1F51R9s5CBlObpV+WIF2xJRGm58oI3YkwSrNpLYKiNSUjqLgcLguMhwk+1VUCyCIrK2tOY2kAeXiBJgORl+MOigr66nJhGmNjdOVZ0ALputHHtz+4FqayFNR6fWvtnrS9O9NQtq9q5NZ4rQD90+ZOPcFrD87HujWL1aZGPfZt0IXlZQKTl5owV5JKKcMDIi7e8s9WwYX/IuG27yNLmbcb1I3K/nAS3B4Zg4ZCXqkbXBJekpPSVuYszFUlywzZmV8KqB5aYkBsur+n9FYkUuSGO7RlgwYPRnie6qSK1hXTWrZo0QsiDfhzwlw0rXiJxI2qF3/JDj39CJ1PeLvH5G9UnOJdINXKCBz7vgxoy4=
   on:
-    tags: staging
     python: 3.7
   
