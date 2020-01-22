@@ -16,7 +16,7 @@ install:
 - pip install -r requirements.txt
 - pip install .
 - conda install -q python=$TRAVIS_PYTHON_VERSION pip requests conda-build jinja2 anaconda-client
-- conda build conda-recipe
+- conda build imdlib
 - conda install --use-local $PACKAGENAME
 script: pytest test/test.py
 env:
