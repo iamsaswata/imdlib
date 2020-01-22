@@ -31,17 +31,16 @@ before_install:
 - conda update -q conda
 install:
 - conda install conda-build
+- conda install anaconda-client
 # You can add any CONDA channels you may need here. CONDA supports
 # both the commands add and append. The only difference is that 
 # the add command places the channel at the front of the priority 
 # list, while append does the opposite.
-- conda config --add channels conda-forge
 
-# Build the conda recipe for this package
-- conda build -q --python=$TRAVIS_PYTHON_VERSION --output-folder bld-dir
-# Add the built package as a channel with highest priority
-- conda config --add channels "file://`pwd`/bld-dir"
+after_success:
+- chmod +x ./deploy_conda.sh
 
-# Create and activate the test environment
-- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION imdlib --file requirements.txt
-- source activate test-environment
+deploy:
+- provider: script
+  script: ./deploy_conda.sh
+  skip_cleanup: true
