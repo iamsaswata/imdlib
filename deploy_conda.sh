@@ -22,7 +22,7 @@ done
 # convert package to other platforms
 cd ~
 echo $PWD
-platforms=( linux-64 )
+platforms=( linux-64 win-64 )
 find $HOME/miniconda/conda-bld/linux-64/ -name *.tar.bz2 | while read file
 do
     echo $file
@@ -33,9 +33,9 @@ do
     done    
 done
 # upload packages to conda
-# find $HOME/conda-bld/ -name *.tar.bz2 | while read file
-# do
-#     echo $file
-#     anaconda upload $file
-# done
-# echo "Building conda package done!"
+find $HOME/miniconda/conda-bld/ -name *.tar.bz2 | while read file
+do
+    echo $file
+    anaconda -t $ANACONDA_TOKEN upload $file
+done
+echo "Building conda package done!"
