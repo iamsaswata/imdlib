@@ -1,0 +1,12 @@
+language: python
+python:
+  - "3.7"
+before_install:
+    - "echo $HOME"
+    - pip install pytest pytest-cov
+# command to install dependencies
+install: 
+    - pip install -r requirements.txt
+    - pip install .
+# command to run tests
+script: pytest test/test.py
