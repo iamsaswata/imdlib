@@ -9,6 +9,7 @@ before_install:
 - "./miniconda.sh -b"
 - export PATH=$HOME/miniconda2/bin:$PATH
 - conda install -y -c anaconda python=3.7.6
+- conda install -c anaconda tqdm 
 - conda config --set always_yes true
 - conda config --set anaconda_upload no
 install:
