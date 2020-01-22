@@ -10,7 +10,6 @@ before_install:
 - chmod +x miniconda.sh
 - bash miniconda.sh -b -p $HOME/miniconda
 - export PATH="$HOME/miniconda/bin:$PATH"
-
 - conda install -y -c anaconda python=3.7.6
 - pip install tqdm
 - conda config --set always_yes true --set changeps1 no
