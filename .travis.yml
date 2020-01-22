@@ -40,3 +40,5 @@ deploy:
     script: deploy_staging.sh
     on:
      tags: true
+
+     
