@@ -30,8 +30,8 @@ before_install:
 - conda config --set always_yes true --set changeps1 no
 - conda update -q conda
 install:
-- conda install conda-build
-- conda install anaconda-client
+- conda install -y conda-build
+- conda install -y anaconda-client
 # You can add any CONDA channels you may need here. CONDA supports
 # both the commands add and append. The only difference is that 
 # the add command places the channel at the front of the priority 
