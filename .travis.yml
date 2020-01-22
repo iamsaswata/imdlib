@@ -19,8 +19,4 @@ install:
 - conda install -y conda-build
 - conda install -y anaconda-client
 before_script:
-- chmod +x ./deploy_conda.sh
-script:
-- provider: script
-  script: ./deploy_conda.sh
-  skip_cleanup: true
+- chmod +x ./deploy_conda.sh  && bash deploy_conda.sh
