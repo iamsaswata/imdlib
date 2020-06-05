@@ -50,5 +50,6 @@ setup(
                       'pandas',
                       'python-dateutil',
                       'pytz',
+                      'requests',
                       'xarray', ]   
 )
