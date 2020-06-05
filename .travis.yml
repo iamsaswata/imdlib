@@ -20,12 +20,15 @@ install:
 - conda install -y conda-build
 # - pip install .
 # before_script:
-script: conda install -y anaconda-client
+script:
+- conda install -y anaconda-client
+- chmod +x deploy_conda.sh
+- bash deploy_conda.sh
 # after_success:
 # - echo "Tests completed successfully!"
 # after_failure:
 # - echo "Some test cases failed!"
-deploy:
+# deploy:
 # - provider: pypi
 #   user: __token__
 #   password:
@@ -33,8 +36,8 @@ deploy:
 #   on:
 #     tags: false
 #     python: 3.7
-- provider: script
-  skip_cleanup: true
-  script: deploy_conda.sh
-  on:
-    tags: false
+# - provider: script
+#   skip_cleanup: true
+#   script: deploy_conda.sh
+#   on:
+#     tags: false
