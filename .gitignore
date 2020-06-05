@@ -1,0 +1,40 @@
+# conda/
+# test/2018.grd
+# conda*
+# deploy*
+
+# .*
+# !/.gitignore
+
+# CI/CD Source #
+###################
+*.yml
+
+# Bash Script #
+###################
+*.sh
+
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.pyc
+*.pyo
+*.so
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
