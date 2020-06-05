@@ -18,10 +18,9 @@ before_install:
 # - pip install pytest pytest-cov
 install:
 - conda install -y conda-build
-- conda install -y anaconda-client
 # - pip install .
 # before_script:
-# script: pytest test/test.py
+script: conda install -y anaconda-client
 # after_success:
 # - echo "Tests completed successfully!"
 # after_failure:
