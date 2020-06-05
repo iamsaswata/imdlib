@@ -17,15 +17,15 @@ before_install:
 # - pip install -r requirements.txt
 # - pip install pytest pytest-cov
 install:
-# - pip install .
-before_script:
 - conda install -y conda-build
 - conda install -y anaconda-client
+# - pip install .
+# before_script:
 # script: pytest test/test.py
-after_success:
-- echo "Tests completed successfully!"
-after_failure:
-- echo "Some test cases failed!"
+# after_success:
+# - echo "Tests completed successfully!"
+# after_failure:
+# - echo "Some test cases failed!"
 # deploy:
 # - provider: pypi
 #   user: __token__
