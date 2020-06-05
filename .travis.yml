@@ -25,7 +25,7 @@ script: conda install -y anaconda-client
 # - echo "Tests completed successfully!"
 # after_failure:
 # - echo "Some test cases failed!"
-# deploy:
+deploy:
 # - provider: pypi
 #   user: __token__
 #   password:
@@ -33,9 +33,7 @@ script: conda install -y anaconda-client
 #   on:
 #     tags: false
 #     python: 3.7
-# - provider: script
-#   script: deploy_anaconda.sh
-#   on:
-#     tags: false
-#   on:
-#     branch: master
+- provider: script
+  script: deploy_conda.sh
+  on:
+    tags: false
