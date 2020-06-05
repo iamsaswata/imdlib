@@ -12,7 +12,7 @@
 
 # Bash Script #
 ###################
-*.sh
+# *.sh
 
 # Compiled source #
 ###################
