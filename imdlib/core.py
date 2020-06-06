@@ -370,9 +370,6 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'temp'/'tmax'. ")
 
-    if not fn_format == 'yearwise':
-        a
-
     years = np.arange(time_range[0], time_range[1]+1)
 
     # Handling location for saving data
