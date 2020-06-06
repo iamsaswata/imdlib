@@ -172,6 +172,7 @@ class IMD(object):
 
 def open_data(time_range, var_type, fn_format=None, file_dir=None):
     """
+    get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, sub_dir=False):
     Function to read binary data and return an IMD class object
     time range is tuple or list or numpy array of 2 int number
 
@@ -221,7 +222,7 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
     #######################################
     # Format Date into <yyyy-mm-dd>
     start_day = "{}{}{:02d}{}{:02d}".format(time_range[0], '-', 1, '-', 1)
-    end_day = "{}{}{:02d}{}{:02d}".format(time_range[0], '-', 12, '-', 31)
+    end_day = "{}{}{:02d}{}{:02d}".format(time_range[1], '-', 12, '-', 31)
 
     # Get total no of days (considering leap years)
     no_days = total_days(start_day, end_day)
@@ -273,8 +274,8 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
         # (days_in_year, lon_size_class, lat_size_class)
         data = np.transpose(np.reshape(data, (days_in_year, lat_size_class,
                             lon_size_class), order='C'), (0, 2, 1))
-        all_data[count_day:count_day+nlen, :, :] = data
-        count_day += nlen
+        all_data[count_day:count_day+len(data), :, :] = data
+        count_day += len(data)
         # Stack data vertically to get multi-year data
         # if i != time_range[0]:
         #     all_data = np.vstack((all_data, data))
@@ -304,7 +305,8 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
     Function to read binary data and return an IMD class object
     time range is tuple or list or numpy array of 2 int number
 
-    Idea and Implementation by Pratiman Patel & Saswata Nandi
+    Idea and drafted by Pratiman Patel
+    Implemented by Saswata Nandi
 
     Parameters
     ----------
@@ -350,7 +352,10 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
         var = 'rain'
         url = 'http://www.imdpune.gov.in/Clim_Pred_LRF_New/rainfall.php'
         fini = 'Rainfall_ind'
-        fend = '_rfp25.grd'
+        if fn_format == 'yearwise':
+            fend = '.grd'
+        else:
+            fend = '_rfp25.grd'
     elif var_type=='tmax':
         var = 'maxtemp'
         url = 'http://www.imdpune.gov.in/Clim_Pred_LRF_New/maxtemp.php'
@@ -364,6 +369,9 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
     else:
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'temp'/'tmax'. ")
+
+    if not fn_format == 'yearwise':
+        a
 
     years = np.arange(time_range[0], time_range[1]+1)
 
@@ -400,7 +408,7 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
             # Setting file name
             if file_dir is not None:
                 if fn_format == 'yearwise':
-                    fname = os.path.join(file_dir, var_type) + '/' + str(year) + '.grd'
+                    fname = os.path.join(file_dir, var_type) + '/' + str(year) + fend
                 else:
                     if sub_dir:
                         fname = os.path.join(file_dir, var_type) + '/' + fini + str(year) + fend
@@ -408,7 +416,7 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
                         fname = fini + str(year) + fend
             else:
                 if fn_format == 'yearwise':
-                    fname = var_type + '/' + str(year) + '.grd'
+                    fname = var_type + '/' + str(year) + fend
                 else:
                     if sub_dir:
                         fname = var_type + '/' + fini + str(year) + fend
