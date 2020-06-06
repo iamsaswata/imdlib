@@ -16,7 +16,7 @@ from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename
 class IMD(object):
     """
     Class to handle binary (.grd) IMD gridded meteorological data.
-    Currently Rainfall, TMIN and TMAX variable processing is supported.
+    Currently rain, tmin and tmax variable processing is supported.
 
     Attributes
     ----------
@@ -173,6 +173,7 @@ class IMD(object):
 def open_data(time_range, var_type, fn_format=None, file_dir=None):
     """
     get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, sub_dir=False):
+    
     Function to read binary data and return an IMD class object
     time range is tuple or list or numpy array of 2 int number
 
@@ -236,7 +237,7 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
         lon_size_class = lon_size_temp
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'temp'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. ")
 
     # Loop through all the years
     # all_data -> container to store data for all the year
@@ -294,7 +295,7 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
                    lat_temp, lon_temp)
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'temp'/'tmax'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. ")
 
     return data
 
@@ -302,7 +303,7 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
 
 def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, sub_dir=False):
     """
-    Function to read binary data and return an IMD class object
+    Function to download binary data and return an IMD class object
     time range is tuple or list or numpy array of 2 int number
 
     Idea and drafted by Pratiman Patel
@@ -368,7 +369,7 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
         fend = '.GRD'
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'temp'/'tmax'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. ")
 
     years = np.arange(time_range[0], time_range[1]+1)
 
@@ -397,6 +398,8 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
     try:
         for year in years: 
             # Setting parameters
+            print("Downloading: " + var + " for year " + str(year))
+            
             data = {var: year}
             # Requesting the dataset 
             response = requests.post(url, data=data, proxies=proxies)
@@ -424,6 +427,6 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
             with open(fname, 'wb') as f:
                 f.write(response.content)
 
-        print("File Download Successful")
+        print("Download Successful !!!")
     except requests.exceptions.HTTPError as e:
         print("File Download Failed! Error: {}".format(e))
