@@ -58,12 +58,9 @@ def get_filename(year, var_type, fn_format, file_dir):
             else:
                 if Path('{}{}{}'.format(file_dir, '/', var_type)).exists():
                     fname = file_dir + '/' + var_type + '/' + \
-                            '_Clim_Pred_LRF_New_GridDataDownload_' + \
                             'Rainfall_ind' + str(year) + '_rfp25.grd'
                 else:
-                    fname = file_dir + '/' + '_Clim_Pred_LRF_New_GridData' + \
-                            'Download_Rainfall_ind' + str(year) + \
-                            '_rfp25.grd'
+                    fname = file_dir + '/' + 'Rainfall_ind' + str(year) + '_rfp25.grd'
         else:
             if fn_format == 'yearwise':
                 if Path(var_type).exists():
@@ -72,11 +69,9 @@ def get_filename(year, var_type, fn_format, file_dir):
                     fname = str(year) + '.grd'
             else:
                 if Path(var_type).exists():
-                    fname = var_type + '/' + '_Clim_Pred_LRF_New_GridData' + \
-                            'Download_Rainfall_ind' + str(year) + '_rfp25.grd'
+                    fname = var_type + '/' + 'Rainfall_ind' + str(year) + '_rfp25.grd'
                 else:
-                    fname = '_Clim_Pred_LRF_New_GridDataDownload_Rainfall' + \
-                            '_ind' + str(year) + '_rfp25.grd'
+                    fname = 'Rainfall_ind' + str(year) + '_rfp25.grd'
 
     elif var_type == 'tmax':
 
@@ -89,12 +84,10 @@ def get_filename(year, var_type, fn_format, file_dir):
                     fname = file_dir + '/' + str(year) + '.GRD'
             else:
                 if Path('{}{}{}'.format(file_dir, '/', var_type)).exists():
-                    fname = file_dir + '/' + var_type + '/' + '_Clim_Pred' + \
-                            '_LRF_New_GridDataDownload_Maxtemp_MaxT_' + \
+                    fname = file_dir + '/' + var_type + '/' + 'Maxtemp_MaxT_' + \
                             str(year) + '.GRD'
                 else:
-                    fname = file_dir + '/' + '_Clim_Pred_LRF_New_GridData' + \
-                            'Download_Maxtemp_MaxT_' + str(year) + '.GRD'
+                    fname = file_dir + '/' + 'Maxtemp_MaxT_' + str(year) + '.GRD'
 
         else:
             if fn_format == 'yearwise':
@@ -105,11 +98,9 @@ def get_filename(year, var_type, fn_format, file_dir):
 
             else:
                 if Path(var_type).exists():
-                    fname = var_type + '/' + '_Clim_Pred_LRF_New_GridData' + \
-                            'Download_Maxtemp_MaxT_' + str(year) + '.GRD'
+                    fname = var_type + '/' + 'Maxtemp_MaxT_' + str(year) + '.GRD'
                 else:
-                    fname = '_Clim_Pred_LRF_New_GridDataDownload_Maxtemp_' + \
-                            'MaxT_' + str(year) + '.GRD'
+                    fname = 'Maxtemp_MaxT_' + str(year) + '.GRD'
 
     elif var_type == 'tmin':
 
@@ -122,12 +113,10 @@ def get_filename(year, var_type, fn_format, file_dir):
                     fname = file_dir + '/' + str(year) + '.GRD'
             else:
                 if Path('{}{}{}'.format(file_dir, '/', var_type)).exists():
-                    fname = file_dir + '/' + var_type + '/' + '_Clim_Pred' + \
-                            '_LRF_New_GridDataDownload_Mintemp_MinT_' + \
+                    fname = file_dir + '/' + var_type + '/' + 'Mintemp_MinT_' + \
                             str(year) + '.GRD'
                 else:
-                    fname = file_dir + '/' + '_Clim_Pred_LRF_New_GridData' + \
-                            'Download_Mintemp_MinT_' + str(year) + '.GRD'
+                    fname = file_dir + '/' + 'Mintemp_MinT_' + str(year) + '.GRD'
 
         else:
             if fn_format == 'yearwise':
@@ -138,11 +127,9 @@ def get_filename(year, var_type, fn_format, file_dir):
 
             else:
                 if Path(var_type).exists():
-                    fname = var_type + '/' + '_Clim_Pred_LRF_New_GridData' + \
-                            'Download_Mintemp_MinT_' + str(year) + '.GRD'
+                    fname = var_type + '/' + 'Mintemp_MinT_' + str(year) + '.GRD'
                 else:
-                    fname = '_Clim_Pred_LRF_New_GridDataDownload_Mintemp_' + \
-                            'MinT_' + str(year) + '.GRD'
+                    fname = 'Mintemp_MinT_' + str(year) + '.GRD'
 
     else:
         raise Exception("Error in variable type declaration."
