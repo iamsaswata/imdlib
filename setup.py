@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 # imdlib version
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 def readme():
     """print long description"""
@@ -20,7 +20,7 @@ def readme():
 
 setup(
     name="imdlib",
-    version="0.1.2",
+    version="0.1.3",
     author="Saswata Nandi",
     author_email="iamsaswata@yahoo.com",
     description="A tool for handling and downloading IMD gridded data",
