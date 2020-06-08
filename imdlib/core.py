@@ -179,7 +179,7 @@ class IMD(object):
         xr_da_masked.to_netcdf(outname)
 
 
-def open_data(time_range, var_type, fn_format=None, file_dir=None):
+def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     """
     get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, sub_dir=False):
     
@@ -188,15 +188,17 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
 
     Parameters
     ----------
-    time range : tuple, list or nd.array
-        Two integers time_range represents starting and
-        ending year for reading input files
-
     var_type : str
         Three possible values.
         1. "rain" -> input files are for daily rainfall values
         2. "tmin" -> input files are for daily minimum temperature values
         3. "tmax" -> input files are for daily maximum tempereature values
+
+    start_yr : int
+        Starting year for opening data
+
+    end_yr : int
+        Ending year for opening data
 
     fn_format   : str or None
         fn_format represent filename format. Default vales is None.
@@ -231,8 +233,13 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
     lon_temp = np.linspace(67.5, 97.5, lon_size_temp)
     #######################################
     # Format Date into <yyyy-mm-dd>
-    start_day = "{}{}{:02d}{}{:02d}".format(time_range[0], '-', 1, '-', 1)
-    end_day = "{}{}{:02d}{}{:02d}".format(time_range[1], '-', 12, '-', 31)
+
+    # Handling ending year not given case
+    if sum([bool(start_yr), bool(end_yr)])==1:
+        end_yr = start_yr
+
+    start_day = "{}{}{:02d}{}{:02d}".format(start_yr, '-', 1, '-', 1)
+    end_day = "{}{}{:02d}{}{:02d}".format(end_yr, '-', 12, '-', 31)
 
     # Get total no of days (considering leap years)
     no_days = total_days(start_day, end_day)
@@ -254,7 +261,7 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
     all_data = np.empty((no_days, lon_size_class, lat_size_class))
     # Counter for total days. It helps filling 'all_data' array.
     count_day = 0
-    for i in range(time_range[0], time_range[1]+1):
+    for i in range(start_yr, end_yr+1):
 
         # Decide resolution of input file name
         fname = get_filename(i, var_type, fn_format, file_dir)
@@ -310,7 +317,7 @@ def open_data(time_range, var_type, fn_format=None, file_dir=None):
 
 
 
-def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, sub_dir=False):
+def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub_dir=False, proxies=None):
     """
     Function to download binary data and return an IMD class object
     time range is tuple or list or numpy array of 2 int number
@@ -320,20 +327,17 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
 
     Parameters
     ----------
-    time range : tuple, list or nd.array
-        Two integers time_range represents starting and
-        ending year for reading input files
-
     var_type : str
         Three possible values.
         1. "rain" -> input files are for daily rainfall values
         2. "tmin" -> input files are for daily minimum temperature values
         3. "tmax" -> input files are for daily maximum tempereature values
 
-    proxies : dict
-        Give details in curly bracket as shown in the example below
-        e.g. proxies = { 'http' : 'http://uname:password@ip:port'}
+    start_yr : int
+        Starting year for downloading data
 
+    end_yr : int
+        Ending year for downloading data
 
     fn_format   : str or None
         fn_format represent filename format. Default vales is None.
@@ -351,6 +355,10 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
     sub_dir : bool
         True : if you need subdirectory for each variable type
         False: Files will be saved directly under main directory
+
+    proxies : dict
+        Give details in curly bracket as shown in the example below
+        e.g. proxies = { 'http' : 'http://uname:password@ip:port'}
 
     Returns
     -------
@@ -380,7 +388,11 @@ def get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, 
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'tmin'/'tmax'. ")
 
-    years = np.arange(time_range[0], time_range[1]+1)
+    # Handling ending year not given case
+    if sum([bool(start_yr), bool(end_yr)])==1:
+        end_yr = start_yr
+
+    years = np.arange(start_yr, end_yr+1)
 
     # Handling location for saving data
     if file_dir is not None:
