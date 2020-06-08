@@ -11,6 +11,15 @@ This is a python package to download and handle binary grided data from Indian M
 ## Installation
 
 > pip install imdlib
+ 
+ or
+
+> conda install -c iamsaswata imdlib
+
+or 
+
+> pip install git+https://github.com/iamsaswata/imdlib.git
+
 
 ## Documentation
 
