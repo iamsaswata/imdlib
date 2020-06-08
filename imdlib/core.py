@@ -96,35 +96,6 @@ class IMD(object):
                               header=None,
                               float_format='%.4f')
 
-    def to_ascii(self, file_name, lat=None, lon=None, out_dir=None):
-
-        if self.cat == 'rain':
-            lat_index, lon_index = get_lat_lon(lat, lon,
-                                               self.self.lat_array,
-                                               self.self.lon_array)
-        elif self.cat == 'tmin' or self.cat == 'tmax':
-            lat_index, lon_index = get_lat_lon(lat, lon,
-                                               self.self.lat_array,
-                                               self.self.lon_array)
-        else:
-            raise Exception("Error in variable type declaration."
-                            "It must be 'rain'/'tmin'/'tmax'. ")
-
-        if out_dir is not None:
-            outname = "{}{}{}{}{:.2f}{}{:.2f}{}".format(out_dir, '/',
-                                                        file_name, '_',
-                                                        lat, '_', lon,
-                                                        '.txt')
-        else:
-            outname = "{}{}{:.2f}{}{:.2f}{}".format(file_name, '_',
-                                                    lat, '_', lon, '.txt')
-
-        outname = "{}{:.2f}{}{:.2f}{}".format('point_data_',
-                                              lat, '_', lon, '.txt')
-        pd.DataFrame(self.data[:, lon_index, lat_index]
-                     ).to_csv(outname, sep=' ', index=False,
-                              header=None, float_format='%.4f')
-
     def get_xarray(self):
 
         # swaping axes (time,lon,lat) > (lat,lon, time)
