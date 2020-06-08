@@ -70,31 +70,61 @@ class IMD(object):
     def shape(self):
         print(self.data.shape)
 
-    def to_csv(self, file_name, lat=None, lon=None, out_dir=None):
+    def to_csv(self, file_name=None, lat=None, lon=None, out_dir=None):
 
-        if self.cat == 'rain':
-            lat_index, lon_index = get_lat_lon(lat, lon,
-                                               self.lat_array, self.lon_array)
-        elif self.cat == 'tmin' or self.cat == 'tmax':
-            lat_index, lon_index = get_lat_lon(lat, lon, self.lat_array,
-                                               self.lon_array)
+        if file_name is None:
+            file_name = 'test'
+
+        root, ext = os.path.splitext(file_name)
+        if not ext:
+            ext='.csv'
+
+        # check lat and lon are in the feasible range
+        print(lat)
+        print(max(self.lat_array))
+        print(min(self.lat_array))        
+        if lat is not None and lon is not None:
+            if lat > max(self.lat_array) and lat < min(self.lat_array):
+                raise Exception("Error in given lat coordinates."
+                                "Given lat value is not in the IMD data range!! ")
+            if lon > max(self.lon_array) and lon < min(self.lon_array):
+                raise Exception("Error in in given lon coordinates."
+                                "Given lon value is not in the IMD data range!! ")            
+
+        if lat is None and lon is None:
+            print("Latitude and Longitude are not given!!")
+            print("Converting 3D data to 2d data!!")
+            print("You should reconsider this operation!!")
+            outname = root + ext
+            self.get_xarray().to_dataframe().to_csv(outname)
+
+        elif sum([bool(lat), bool(lon)])==1:
+            raise Exception("Error in lat lon setting."
+                            "One of them is set and the other one remained unset!! ")
         else:
-            raise Exception("Error in variable type declaration."
-                            "It must be 'rain'/'tmin'/'tmax'. ")
+            if self.cat == 'rain':
+                lat_index, lon_index = get_lat_lon(lat, lon,
+                                                   self.lat_array, self.lon_array)
+            elif self.cat == 'tmin' or self.cat == 'tmax':
+                lat_index, lon_index = get_lat_lon(lat, lon, self.lat_array,
+                                                   self.lon_array)
+            else:
+                raise Exception("Error in variable type declaration."
+                                "It must be 'rain'/'tmin'/'tmax'. ")
 
-        if out_dir is not None:
-            outname = "{}{}{}{}{:.2f}{}{:.2f}{}".format(out_dir, '/',
-                                                        file_name, '_',
-                                                        lat, '_', lon, '.csv')
-        else:
-            outname = "{}{}{:.2f}{}{:.2f}{}".format(file_name, '_',
-                                                    lat, '_', lon, '.csv')
+            if out_dir is not None:
+                outname = "{}{}{}{}{:.2f}{}{:.2f}{}".format(out_dir, '/',
+                                                            root, '_',
+                                                            lat, '_', lon, ext)
+            else:
+                outname = "{}{}{:.2f}{}{:.2f}{}".format(root, '_',
+                                                        lat, '_', lon, ext)
 
-        pd.DataFrame(self.data[:, lon_index, lat_index]
-                     ).to_csv(outname,
-                              index=False,
-                              header=None,
-                              float_format='%.4f')
+            pd.DataFrame(self.data[:, lon_index, lat_index]
+                         ).to_csv(outname,
+                                  index=False,
+                                  header=None,
+                                  float_format='%.4f')
 
     def get_xarray(self):
 
@@ -132,12 +162,20 @@ class IMD(object):
 
         return xr_da_masked
 
-    def to_netcdf(self, file_name, out_dir=None):
+    def to_netcdf(self, file_name=None, out_dir=None):
+
+        if file_name is None:
+            file_name = 'test'
+
+        root, ext = os.path.splitext(file_name)
+        if not ext:
+            ext='.nc'
+
         xr_da_masked = self.get_xarray()
         if out_dir is not None:
-            outname = "{}{}{}{}".format(out_dir, '/', file_name, '.nc')
+            outname = "{}{}{}{}".format(out_dir, '/', root, ext)
         else:
-            outname = "{}{}{}".format(file_name, '_', '.nc')
+            outname = "{}{}".format(root, ext)
         xr_da_masked.to_netcdf(outname)
 
 
