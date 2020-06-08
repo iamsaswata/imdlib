@@ -44,12 +44,14 @@ setup(
 
     keywords='imd, India, rainfall, IMD, grid, grided, gridded',
     # packages=['':'cct_nn'],
-    install_requires=['numpy',
+    install_requires=['matplotlib',
+                      'numpy',
                       'pandas',
                       'six',
                       'pandas',
                       'python-dateutil',
                       'pytz',
                       'requests',
+                      'scipy',
                       'xarray', ]   
 )
