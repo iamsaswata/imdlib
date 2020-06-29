@@ -20,7 +20,7 @@ def readme():
 
 setup(
     name="imdlib",
-    version="0.1.4",
+    version="0.1.6",
     author="Saswata Nandi",
     author_email="iamsaswata@yahoo.com",
     description="A tool for handling and downloading IMD gridded data",
@@ -33,7 +33,7 @@ setup(
                  "Programming Language :: Python :: 3",
                  "License :: OSI Approved :: MIT License",
                  "Operating System :: OS Independent",
-                 "Development Status :: 2 - Pre-Alpha",
+                 "Development Status :: 4 - Beta",
                  "Intended Audience :: Developers",
                  "Intended Audience :: Science/Research",
                  "License :: OSI Approved :: MIT License",
