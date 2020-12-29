@@ -1,16 +1,16 @@
 """
-(c) by Saswata Nandi
-contributed by Pratiman Patel
+(c) by Saswata Nandi and Pratiman Patel
 """
-
 
 import array
 import numpy as np
 import pandas as pd
 import os
+import sys
 import requests
 import xarray as xr
 from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename
+from datetime import datetime
 
 
 class IMD(object):
@@ -128,37 +128,51 @@ class IMD(object):
 
     def get_xarray(self):
 
-        # swaping axes (time,lon,lat) > (lat,lon, time)
+        # swaping axes (time,lon,lat) > (time, lat,lon)
         # to create xarray object
-        data_xr = np.swapaxes(self.data, 0, 2)
+        data_xr = np.swapaxes(self.data, 1, 2)
         time = pd.date_range(self.start_day, periods=self.no_days)
+        time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
         if self.cat == 'rain':
-            xr_da = xr.DataArray(data_xr,
-                                 dims=('lat', 'lon', 'time'),
+            xr_da = xr.Dataset({'rain': (['time', 'lat', 'lon'], data_xr,
+                {'units': 'mm/day', 'long_name': 'Rainfall'})},
                                  coords={'lat': self.lat_array,
-                                         'lon': self.lon_array, 'time': time},
-                                 attrs={'long_name': 'rainfall',
-                                        'units': 'mm/day'},
-                                 name='rain')
+                                         'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != -999.)
         elif self.cat == 'tmin':
-            xr_da = xr.DataArray(data_xr,
-                                 dims=('lat', 'lon', 'time'),
+            xr_da = xr.Dataset({'tmin': (['time', 'lat', 'lon'], data_xr,
+                {'units': 'C', 'long_name': 'Mainimum Temperature'})},
                                  coords={'lat': self.lat_array,
-                                         'lon': self.lon_array, 'time': time},
-                                 attrs={'long_name': 'Minimum Temperature',
-                                        'units': 'C'},
-                                 name='tmin')
+                                         'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != data_xr[0, 0, 0])
         elif self.cat == 'tmax':
-            xr_da = xr.DataArray(data_xr,
-                                 dims=('lat', 'lon', 'time'),
+            xr_da = xr.Dataset({'tmax': (['time', 'lat', 'lon'], data_xr,
+                {'units': 'C', 'long_name': 'Maximum Temperature'})},
                                  coords={'lat': self.lat_array,
-                                         'lon': self.lon_array, 'time': time},
-                                 attrs={'long_name': 'Maximum Temperature',
-                                        'units': 'C'},
-                                 name='tmax')
+                                         'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != data_xr[0, 0, 0])
+
+        xr_da_masked.time.encoding['units']=time_units
+        xr_da_masked.time.attrs['standard_name'] = 'time'
+        xr_da_masked.time.attrs['long_name'] = 'time'
+
+        xr_da_masked.lon.attrs['axis'] = 'X' # Optional
+        xr_da_masked.lon.attrs['long_name'] = 'longitude'
+        xr_da_masked.lon.attrs['long_name'] = 'longitude'
+        xr_da_masked.lon.attrs['units'] = 'degrees_east'
+
+        xr_da_masked.lat.attrs['axis'] = 'Y' # Optional
+        xr_da_masked.lat.attrs['standard_name'] = 'latitude'
+        xr_da_masked.lat.attrs['long_name'] = 'latitude'
+        xr_da_masked.lat.attrs['units'] = 'degrees_north'
+
+        xr_da_masked.attrs['Conventions'] = 'CF-1.7'
+        xr_da_masked.attrs['title'] = 'IMD gridded data'
+        xr_da_masked.attrs['source'] = 'https://imdpune.gov.in/'
+        xr_da_masked.attrs['history'] = str(datetime.utcnow()) + ' Python'
+        xr_da_masked.attrs['references'] = ''
+        xr_da_masked.attrs['comment'] = ''
+        xr_da_masked.attrs['crs'] = 'epsg:4326'
 
         return xr_da_masked
 
@@ -177,6 +191,24 @@ class IMD(object):
         else:
             outname = "{}{}".format(root, ext)
         xr_da_masked.to_netcdf(outname)
+
+    def to_geotiff(self, file_name=None, out_dir=None):
+        try:
+            import rioxarray as rio
+            if file_name is None:
+                file_name = 'test'
+            root, ext = os.path.splitext(file_name)
+            if not ext:
+                ext='.tif'
+            xr_da_masked = self.get_xarray()
+            if out_dir is not None:
+                outname = "{}{}{}{}".format(out_dir, '/', root, ext)
+            else:
+                outname = "{}{}".format(root, ext)
+            xr_da_masked[self.cat].rio.to_raster(outname)
+        except:
+            raise Exception ("rioxarray is not installed")                              
+
 
 
 def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
@@ -368,7 +400,7 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
 
     if var_type=='rain':
         var = 'rain'
-        url = 'http://www.imdpune.gov.in/Clim_Pred_LRF_New/rainfall.php'
+        url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/rainfall.php'
         fini = 'Rainfall_ind'
         if fn_format == 'yearwise':
             fend = '.grd'
@@ -376,12 +408,12 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             fend = '_rfp25.grd'
     elif var_type=='tmax':
         var = 'maxtemp'
-        url = 'http://www.imdpune.gov.in/Clim_Pred_LRF_New/maxtemp.php'
+        url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/maxtemp.php'
         fini = 'Maxtemp_MaxT_'
         fend = '.GRD'
     elif var_type=='tmin':
         var = 'mintemp'
-        url = 'http://www.imdpune.gov.in/Clim_Pred_LRF_New/mintemp.php'
+        url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/mintemp.php'
         fini = 'Mintemp_MinT_'
         fend = '.GRD'
     else:
@@ -448,6 +480,11 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             with open(fname, 'wb') as f:
                 f.write(response.content)
 
+
         print("Download Successful !!!")
+
+        data = open_data(var_type, start_yr, end_yr, fn_format, file_dir)
+        return data
+
     except requests.exceptions.HTTPError as e:
         print("File Download Failed! Error: {}".format(e))
