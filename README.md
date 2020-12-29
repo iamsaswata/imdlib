@@ -24,6 +24,7 @@ or
 ## Documentation
 
 [Tutorial](https://saswatanandi.github.io/softwares/imdlib)
+[Tutorial](https://pratiman-91.github.io/blog.html)
 
 ## License
 
