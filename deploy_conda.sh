@@ -3,7 +3,7 @@
 # change the package name to the existing PyPi package you would like to build
 pkg='imdlib'
 echo $PWD
-array=( 3.7 )
+array=( 3.6 )
 echo "Building conda package ..."
 cd ~
 echo $PWD

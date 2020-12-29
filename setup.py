@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 # imdlib version
-VERSION = "0.1.8.1"
+VERSION = "0.1.9"
 
 def readme():
     """print long description"""
@@ -20,7 +20,7 @@ def readme():
 
 setup(
     name="imdlib",
-    version="0.1.8.1",
+    version="0.1.9",
     author="Saswata Nandi",
     author_email="iamsaswata@yahoo.com",
     description="A tool for handling and downloading IMD gridded data",
@@ -42,7 +42,7 @@ setup(
                 ],
     python_requires='>=3.0',
 
-    keywords='imd, India, rainfall, IMD, grid, grided, gridded',
+    keywords='imd, India, rainfall, data, hydrology, IMD, grid, grided, gridded',
     # packages=['':'cct_nn'],
     install_requires=['matplotlib',
                       'numpy',
