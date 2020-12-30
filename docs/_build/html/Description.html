@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Index &mdash; imdlib  documentation</title>
+  <title>Description &mdash; imdlib  documentation</title>
   
 
   
@@ -34,8 +34,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-    <link rel="index" title="Index" href="#" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Downloading" href="Usage.html" />
+    <link rel="prev" title="Welcome to imdlib’s documentation!" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -81,25 +83,16 @@
             
             
               <p class="caption"><span class="caption-text">Getting Started</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="Description.html">Description</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Description.html#installation">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Description.html#dependencies">Dependencies</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Description</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#dependencies">Dependencies</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Usage</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="Usage.html">Downloading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Usage.html#reading-imd-datasets">Reading IMD datasets</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Usage.html#processing">Processing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Usage.html#plotting">Plotting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Usage.html#saving">Saving</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Reference</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog History</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="external-links.html">External Links</a></li>
-<li class="toctree-l1"><a class="reference internal" href="authors.html">About Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Usage.html#processing-using-xarray">Processing using xarray</a></li>
 </ul>
 
             
@@ -146,12 +139,14 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Index</li>
+      <li>Description</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
+            <a href="_sources/Description.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -163,11 +158,28 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-
-<h1 id="index">Index</h1>
-
-<div class="genindex-jumpbox">
- 
+  <div class="section" id="description">
+<h1>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h1>
+<p>IMDLIB is a python package to download and handle binary grided data from India Meteorological Department (IMD). For more information about the IMD datasets, follow the following link: <a class="reference external" href="http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html">http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html</a></p>
+</div>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>IMDLIB can be installed via pip. It is tested for both Windows and Linux platforms with 64-bit architecture only.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install imdlib
+</pre></div>
+</div>
+<p>Installation using conda.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c iamsaswata imdlib
+</pre></div>
+</div>
+<p>Installation from source file.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install git+https://github.com/iamsaswata/imdlib.git
+</pre></div>
+</div>
+</div>
+<div class="section" id="dependencies">
+<h1>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h1>
+<p>IMDLIB is currently built with the following plugins. You need to have a python version &gt;= 3.5 and install the below dependencies before installing IMDLIB from source.</p>
 </div>
 
 
@@ -175,6 +187,15 @@
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Usage.html" class="btn btn-neutral float-right" title="Downloading" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to imdlib’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
