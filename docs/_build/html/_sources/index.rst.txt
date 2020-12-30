@@ -7,10 +7,24 @@ Welcome to imdlib's documentation!
 ==================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :caption: Getting Started
 
+   Description
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Usage
+
+   Usage
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
+
+   changelog
+   contributions
+   external-links
+   authors
 
 Indices and tables
 ==================
