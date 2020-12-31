@@ -16,7 +16,7 @@ IMDLIB is capable of downloading gridded rainfall and temperature data (min and 
 Output
 ------
 
-.. code-block:: python
+.. code-block:: text
 
     Downloading: rain for year 2010
     Downloading: rain for year 2011
@@ -32,6 +32,7 @@ Output
 The output is saved in the current working directory. If you want to save the files to a different directory, then you can use following code:
 
 .. code-block:: python
+
     import imdlib as imd
 
     # Downloading 8 years of rainfall data for India
@@ -47,6 +48,7 @@ Reading IMD datasets
 One major purposes of IMDLIB is to process IMD’s gridded dataset. The original data is available in ``grd`` file format. IMDLIB can read ``grd`` file in ``xarray`` and will create a ``IMD class object``.
 
 .. code-block:: python
+
     import imdlib as imd
 
     # Downloading 8 years of rainfall data for India
@@ -102,6 +104,8 @@ Plotting
 
 .. image:: savefig/fig1.png
    :width: 400
+
+   
 Saving
 ======
 
