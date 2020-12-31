@@ -29,3 +29,10 @@ or
 ## License
 
 imdlib is available under the open source [MIT](https://opensource.org/licenses/MIT).
+
+## Citation
+
+If you are using imdlib and would like to cite it in academic publication, we would certainly appreciate it. We recommend to use the zenodo DOI for this purpose:
+
+
+[![DOI](https://zenodo.org/badge/235463327.svg)](https://zenodo.org/badge/latestdoi/235463327)

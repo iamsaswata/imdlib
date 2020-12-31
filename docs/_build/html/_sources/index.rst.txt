@@ -32,6 +32,14 @@ Department (IMD). For more information about the IMD datasets, follow the follow
    changelog
    cf-conventions
 
+Citation
+--------
+
+If you are using imdlib and would like to cite it in academic publication, we would certainly appreciate it. We recommend to use the zenodo DOI for this purpose:
+
+    .. image:: https://zenodo.org/badge/235463327.svg
+       :target: https://doi.org/10.5281/zenodo.4405233
+
 About
 -----
 
@@ -44,7 +52,9 @@ About
     .. image:: https://travis-ci.org/iamsaswata/imdlib.svg?branch=master
         :target: https://travis-ci.org/iamsaswata/imdlib
     .. image:: https://anaconda.org/iamsaswata/imdlib/badges/version.svg
-        :target: https://anaconda.org/iamsaswata/imdlib 
+        :target: https://anaconda.org/iamsaswata/imdlib
+    .. image:: https://zenodo.org/badge/235463327.svg
+        :target: https://doi.org/10.5281/zenodo.4405233       
 
 :Documentation:
     .. image:: https://readthedocs.org/projects/imdlib/badge/?version=stable
