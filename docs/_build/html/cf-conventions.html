@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Search &mdash; IMDLIB  documentation</title>
+  <title>CF conventions &mdash; IMDLIB  documentation</title>
   
 
   
@@ -20,7 +20,6 @@
   
 
   
-    
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -35,9 +34,9 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-    <script type="text/javascript" src="_static/searchtools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Changelog History" href="changelog.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -64,7 +63,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -96,10 +95,13 @@
 <li class="toctree-l1"><a class="reference internal" href="Usage.html#saving">Saving</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Reference</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog History</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cf-conventions.html">CF conventions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CF conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#netcdf-file-convention">NetCDF File Convention</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -146,12 +148,14 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Search</li>
+      <li>CF conventions</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
+            <a href="_sources/cf-conventions.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -163,23 +167,33 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  <div class="section" id="cf-conventions">
+<span id="id1"></span><h1>CF conventions<a class="headerlink" href="#cf-conventions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="netcdf-file-convention">
+<h2>NetCDF File Convention<a class="headerlink" href="#netcdf-file-convention" title="Permalink to this headline">¶</a></h2>
+<p>The IMDLIB focuses on producing netCDF (network Common Data Form) based final output as
+netCDF is the format most commonly used for climate model generated data. The netCDF Climate
+and Forecast (CF) Metadata Conventions, Version 1.7, has been adopted by IMDLIB for its
+efficient and consistent use with other standard netCDF based tool/applications. The
+epsg:4326 coordinate reference systems (CRS) is considered in CF naming convention and is
+vital for the function to_geotiff to work correctly. For more information on the CF convention,
+users are requested to visit CF Conventions Home Page and xarray &amp; CF integration resources.</p>
+<a class="reference internal image-reference" href="_images/fig2.jpg"><img alt="_images/fig2.jpg" src="_images/fig2.jpg" style="width: 700px;" /></a>
+</div>
+</div>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="changelog.html" class="btn btn-neutral float-left" title="Changelog History" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -219,14 +233,7 @@
   
   
     
-  
-  <script type="text/javascript">
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script type="text/javascript" id="searchindexloader"></script>
    
-
 
 </body>
 </html>
