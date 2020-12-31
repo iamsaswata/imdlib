@@ -14,7 +14,7 @@ IMDLIB is capable of downloading gridded rainfall and temperature data (min and 
     imd.get_data(variable, start_yr, end_yr, fn_format='yearwise')
 
 Output
-######
+------
 
 .. code-block:: python
 
@@ -58,7 +58,7 @@ One major purposes of IMDLIB is to process IMD’s gridded dataset. The original
     data
 
 Output
-######
+------
 
 ``<imdlib.core.IMD at 0x13e5b3753c8>``
 
@@ -71,8 +71,56 @@ Output
 Processing
 ==========
 
+Getting the xarray object for further processing.
+
+.. code-block:: python
+
+    ds = data.get_xarray()
+    print(ds)
+
+.. code-block:: python
+
+    <xarray.DataArray 'rain' (lat: 129, lon: 135, time: 3287)>
+    ...
+    ...
+    ...
+    Coordinates:
+    * lat      (lat) float64 6.5 6.75 7.0 7.25 7.5 ... 37.5 37.75 38.0 38.25 38.5
+    * lon      (lon) float64 66.5 66.75 67.0 67.25 67.5 ... 99.25 99.5 99.75 100.0
+    * time     (time) datetime64[ns] 2010-01-01 2010-01-02 ... 2018-12-31
+    Attributes:
+    long_name:  rainfall
+    units:      mm/day
+
+
 Plotting
 ========
 
+.. code-block:: python
+
+    ds.mean('time').plot()
+
+.. image:: savefig/fig1.png
+   :width: 400
 Saving
 ======
+
+Get data for a given location ,convert, and save into csv file
+
+.. code-block:: python
+
+    lat = 20.03
+    lon = 77.23
+    data.to_csv('test.csv', lat, lon, file_dir)
+
+Save data in netCDF format
+
+.. code-block:: python
+
+    data.to_netcdf('test.nc', file_dir)
+
+Save data in GeoTIFF format (if you have rioxarray library)
+
+.. code-block:: python
+
+    print(data.to_geotiff('test.tif', file_dir))
