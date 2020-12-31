@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Downloading &mdash; imdlib  documentation</title>
+  <title>Downloading &mdash; IMDLIB  documentation</title>
   
 
   
@@ -51,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> imdlib
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> IMDLIB
           
 
           
@@ -123,7 +123,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">imdlib</a>
+          <a href="index.html">IMDLIB</a>
         
       </nav>
 
@@ -187,7 +187,7 @@
 </div>
 <div class="section" id="output">
 <h2>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>Downloading: rain for year 2010
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Downloading: rain for year 2010
 Downloading: rain for year 2011
 Downloading: rain for year 2012
 Downloading: rain for year 2013
@@ -200,11 +200,32 @@ Download Successful !!!
 </pre></div>
 </div>
 <p>The output is saved in the current working directory. If you want to save the files to a different directory, then you can use following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">imdlib</span> <span class="k">as</span> <span class="nn">imd</span>
+
+<span class="c1"># Downloading 8 years of rainfall data for India</span>
+<span class="n">start_yr</span> <span class="o">=</span> <span class="mi">2010</span>
+<span class="n">end_yr</span> <span class="o">=</span> <span class="mi">2018</span>
+<span class="n">variable</span> <span class="o">=</span> <span class="s1">&#39;rain&#39;</span> <span class="c1"># other options are (&#39;tmin&#39;/ &#39;tmax&#39;)</span>
+<span class="n">file_dir</span> <span class="o">=</span> <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;C:\Users\imdlib\Desktop</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">)</span> <span class="c1">#Path to save the files</span>
+<span class="n">imd</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">start_yr</span><span class="p">,</span> <span class="n">end_yr</span><span class="p">,</span> <span class="n">fn_format</span><span class="o">=</span><span class="s1">&#39;yearwise&#39;</span><span class="p">,</span> <span class="n">file_dir</span><span class="o">=</span><span class="n">file_dir</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="reading-imd-datasets">
 <h1>Reading IMD datasets<a class="headerlink" href="#reading-imd-datasets" title="Permalink to this headline">¶</a></h1>
 <p>One major purposes of IMDLIB is to process IMD’s gridded dataset. The original data is available in <code class="docutils literal notranslate"><span class="pre">grd</span></code> file format. IMDLIB can read <code class="docutils literal notranslate"><span class="pre">grd</span></code> file in <code class="docutils literal notranslate"><span class="pre">xarray</span></code> and will create a <code class="docutils literal notranslate"><span class="pre">IMD</span> <span class="pre">class</span> <span class="pre">object</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">imdlib</span> <span class="k">as</span> <span class="nn">imd</span>
+
+<span class="c1"># Downloading 8 years of rainfall data for India</span>
+<span class="n">start_yr</span> <span class="o">=</span> <span class="mi">2010</span>
+<span class="n">end_yr</span> <span class="o">=</span> <span class="mi">2018</span>
+<span class="n">variable</span> <span class="o">=</span> <span class="s1">&#39;rain&#39;</span> <span class="c1"># other options are (&#39;tmin&#39;/ &#39;tmax&#39;)</span>
+<span class="n">file_dir</span> <span class="o">=</span> <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;C:\Users\imdlib\Desktop</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">)</span> <span class="c1">#Path to save the files</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">imd</span><span class="o">.</span><span class="n">open_data</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">start_yr</span><span class="p">,</span> <span class="n">end_yr</span><span class="p">,</span><span class="s1">&#39;yearwise&#39;</span><span class="p">,</span> <span class="n">file_dir</span><span class="p">)</span>
+<span class="n">data</span>
+</pre></div>
+</div>
 <div class="section" id="id1">
 <h2>Output<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">&lt;imdlib.core.IMD</span> <span class="pre">at</span> <span class="pre">0x13e5b3753c8&gt;</span></code></p>
