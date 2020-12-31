@@ -36,7 +36,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="changelog.html" />
+    <link rel="next" title="Frequently Asked Questions" href="faq.html" />
     <link rel="prev" title="Description" href="Description.html" /> 
 </head>
 
@@ -86,7 +86,6 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="Description.html">Description</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Description.html#installation">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Description.html#dependencies">Dependencies</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Usage</span></p>
 <ul class="current">
@@ -101,6 +100,14 @@
 <li class="toctree-l1"><a class="reference internal" href="#processing">Processing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#plotting">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#saving">Saving</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="external-links.html">External Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">About Authors</a></li>
 </ul>
 
             
@@ -210,12 +217,48 @@ Download Successful !!!
 </div>
 <div class="section" id="processing">
 <h1>Processing<a class="headerlink" href="#processing" title="Permalink to this headline">¶</a></h1>
+<p>Getting the xarray object for further processing.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_xarray</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">xarray</span><span class="o">.</span><span class="n">DataArray</span> <span class="s1">&#39;rain&#39;</span> <span class="p">(</span><span class="n">lat</span><span class="p">:</span> <span class="mi">129</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mi">135</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="mi">3287</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="o">...</span>
+<span class="o">...</span>
+<span class="o">...</span>
+<span class="n">Coordinates</span><span class="p">:</span>
+<span class="o">*</span> <span class="n">lat</span>      <span class="p">(</span><span class="n">lat</span><span class="p">)</span> <span class="n">float64</span> <span class="mf">6.5</span> <span class="mf">6.75</span> <span class="mf">7.0</span> <span class="mf">7.25</span> <span class="mf">7.5</span> <span class="o">...</span> <span class="mf">37.5</span> <span class="mf">37.75</span> <span class="mf">38.0</span> <span class="mf">38.25</span> <span class="mf">38.5</span>
+<span class="o">*</span> <span class="n">lon</span>      <span class="p">(</span><span class="n">lon</span><span class="p">)</span> <span class="n">float64</span> <span class="mf">66.5</span> <span class="mf">66.75</span> <span class="mf">67.0</span> <span class="mf">67.25</span> <span class="mf">67.5</span> <span class="o">...</span> <span class="mf">99.25</span> <span class="mf">99.5</span> <span class="mf">99.75</span> <span class="mf">100.0</span>
+<span class="o">*</span> <span class="n">time</span>     <span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="n">datetime64</span><span class="p">[</span><span class="n">ns</span><span class="p">]</span> <span class="mi">2010</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span> <span class="mi">2010</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">02</span> <span class="o">...</span> <span class="mi">2018</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">31</span>
+<span class="n">Attributes</span><span class="p">:</span>
+<span class="n">long_name</span><span class="p">:</span>  <span class="n">rainfall</span>
+<span class="n">units</span><span class="p">:</span>      <span class="n">mm</span><span class="o">/</span><span class="n">day</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="plotting">
 <h1>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/fig1.png"><img alt="_images/fig1.png" src="_images/fig1.png" style="width: 400px;" /></a>
 </div>
 <div class="section" id="saving">
 <h1>Saving<a class="headerlink" href="#saving" title="Permalink to this headline">¶</a></h1>
+<p>Get data for a given location ,convert, and save into csv file</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">lat</span> <span class="o">=</span> <span class="mf">20.03</span>
+<span class="n">lon</span> <span class="o">=</span> <span class="mf">77.23</span>
+<span class="n">data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s1">&#39;test.csv&#39;</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">file_dir</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Save data in netCDF format</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="s1">&#39;test.nc&#39;</span><span class="p">,</span> <span class="n">file_dir</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Save data in GeoTIFF format (if you have rioxarray library)</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">to_geotiff</span><span class="p">(</span><span class="s1">&#39;test.tif&#39;</span><span class="p">,</span> <span class="n">file_dir</span><span class="p">))</span>
+</pre></div>
+</div>
 </div>
 
 
@@ -226,7 +269,7 @@ Download Successful !!!
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="changelog.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="faq.html" class="btn btn-neutral float-right" title="Frequently Asked Questions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="Description.html" class="btn btn-neutral float-left" title="Description" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

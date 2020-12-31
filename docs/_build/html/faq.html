@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Description &mdash; imdlib  documentation</title>
+  <title>Frequently Asked Questions &mdash; imdlib  documentation</title>
   
 
   
@@ -36,8 +36,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Downloading" href="Usage.html" />
-    <link rel="prev" title="Welcome to imdlib’s documentation!" href="index.html" /> 
+    <link rel="next" title="Changelog History" href="changelog.html" />
+    <link rel="prev" title="Downloading" href="Usage.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -83,12 +83,9 @@
             
             
               <p class="caption"><span class="caption-text">Getting Started</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Description</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
-</ul>
-</li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Description.html">Description</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Description.html#installation">Installation</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Usage</span></p>
 <ul>
@@ -99,8 +96,14 @@
 <li class="toctree-l1"><a class="reference internal" href="Usage.html#saving">Saving</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Reference</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-the-development-status-of-the-imdlib-library">What is the development status of the imdlib library?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-others-tools-should-i-know-about">What others tools should I know about?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-developing-imdlib">Why developing imdlib?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#can-imdlib-process-any-grd-file">Can imdlib process any GRD file?</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog History</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="external-links.html">External Links</a></li>
@@ -151,13 +154,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Description</li>
+      <li>Frequently Asked Questions</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/Description.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/faq.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -170,77 +173,38 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="description">
-<h1>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h1>
-<p>IMDLIB is a python package to download and handle binary grided data from India Meteorological Department (IMD). For more information about the IMD datasets, follow the following link: <a class="reference external" href="http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html">http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html</a></p>
+  <div class="section" id="frequently-asked-questions">
+<span id="faq"></span><h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="what-is-the-development-status-of-the-imdlib-library">
+<h2>What is the development status of the imdlib library?<a class="headerlink" href="#what-is-the-development-status-of-the-imdlib-library" title="Permalink to this headline">¶</a></h2>
+<p>As of today (January 2021), IMDLIB is used by several people (number unknown), specifically
+by research scholars across India. We plan to continue and maintain imdlib in the coming
+future with our limited time. Imdlib is small but a useful library that we enjoyed during our
+PhD journey.</p>
 </div>
-<div class="section" id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>IMDLIB is tested for both Windows and Linux platforms with 64-bit architecture only.</p>
-<p>The recommended way to install IMDLIB is using conda.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c iamsaswata imdlib
-</pre></div>
+<div class="section" id="what-others-tools-should-i-know-about">
+<h2>What others tools should I know about?<a class="headerlink" href="#what-others-tools-should-i-know-about" title="Permalink to this headline">¶</a></h2>
+<p>For handling of gridded data, the netCDF file system is universally adopted. The <a class="reference external" href="http://xarray.pydata.org/en/stable/">xarray</a>
+is an excellent library for handling netCDF data in python. If one need parallel support,
+<a class="reference external" href="https://dask.org/">Dask</a> provides advanced parallelism for analytics. But, both of them use <a class="reference external" href="https://numpy.org/">numpy</a> / <a class="reference external" href="http://pandas.pydata.org/">pandas</a>
+as the core for building their final product. In the cloud-native future, hopefully <a class="reference external" href="https://pangeo-data.github.io/">pangeo</a>
+will emerge as the one of the most powerful tool for data analytics.</p>
 </div>
-<p>Installation using pip.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install imdlib
-</pre></div>
+<div class="section" id="why-developing-imdlib">
+<h2>Why developing imdlib?<a class="headerlink" href="#why-developing-imdlib" title="Permalink to this headline">¶</a></h2>
+<p>As hydrologist and climate scientist, we had to find and process the various meteorological (Indian)
+variables quite often. Recently, gridded forcing datasets are made publicly available in India. From our past
+experiences we were aware how painful and tedious it is to get and process the binary gridded
+dataset for our area of interest. So, initially it was developed only for our own use. But, from
+encouragement of other fellow friends, we decided to to give it a proper shape and publish as a
+proper package.</p>
 </div>
-<p>Installation from source/development version.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install git+https://github.com/iamsaswata/imdlib.git
-</pre></div>
-</div>
-<div class="section" id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
-<p>IMDLIB is currently built with the following plugins. You need to have a python version &gt;= 3.5 and install the below dependencies before installing IMDLIB from source.</p>
-<table class="colwidths-given docutils align-default">
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Packages</p></th>
-<th class="head"><p>version</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>certifi</p></td>
-<td><p>[2019.11.28]</p></td>
-</tr>
-<tr class="row-odd"><td><p>matplotlib</p></td>
-<td><p>[3.1.3]</p></td>
-</tr>
-<tr class="row-even"><td><p>numpy</p></td>
-<td><p>[1.18.1]</p></td>
-</tr>
-<tr class="row-odd"><td><p>pandas</p></td>
-<td><p>[0.25.3]</p></td>
-</tr>
-<tr class="row-even"><td><p>python-dateutil</p></td>
-<td><p>[ 2.8.1 ]</p></td>
-</tr>
-<tr class="row-odd"><td><p>pytest</p></td>
-<td><p>[5.3.4]</p></td>
-</tr>
-<tr class="row-even"><td><p>pytz</p></td>
-<td><p>[ 2019.3]</p></td>
-</tr>
-<tr class="row-odd"><td><p>requests</p></td>
-<td><p>[2.23.0]</p></td>
-</tr>
-<tr class="row-even"><td><p>scipy</p></td>
-<td><p>[1.4.1]</p></td>
-</tr>
-<tr class="row-odd"><td><p>six</p></td>
-<td><p>[1.14.0]</p></td>
-</tr>
-<tr class="row-even"><td><p>xarray</p></td>
-<td><p>[0.14.1]</p></td>
-</tr>
-<tr class="row-odd"><td><p>rioxarray (optional)</p></td>
-<td><p>[0.1.1]</p></td>
-</tr>
-</tbody>
-</table>
+<div class="section" id="can-imdlib-process-any-grd-file">
+<h2>Can imdlib process any GRD file?<a class="headerlink" href="#can-imdlib-process-any-grd-file" title="Permalink to this headline">¶</a></h2>
+<p>No. For hadling any binary dataset, one needs to know the exact dimension (both spatial and
+temporal) of the given data.Imdlib takes this information from <a class="reference external" href="http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html">imdpune</a>. So, if the data
+dimension doesn’t match with the imdlib considered dimension, it won’t be able to read or further
+process the data.</p>
 </div>
 </div>
 
@@ -252,10 +216,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="Usage.html" class="btn btn-neutral float-right" title="Downloading" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="changelog.html" class="btn btn-neutral float-right" title="Changelog History" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to imdlib’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="Usage.html" class="btn btn-neutral float-left" title="Downloading" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
