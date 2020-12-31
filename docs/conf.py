@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'imdlib'
+project = 'IMDLIB'
 copyright = '2020, Saswata Nandi and Pratiman Patel'
 author = 'Saswata Nandi and Pratiman Patel'
 
