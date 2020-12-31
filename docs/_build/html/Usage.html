@@ -29,7 +29,6 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -105,9 +104,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog History</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="external-links.html">External Links</a></li>
-<li class="toctree-l1"><a class="reference internal" href="authors.html">About Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cf-conventions.html">CF conventions</a></li>
 </ul>
 
             
@@ -182,7 +179,7 @@
 <span class="n">start_yr</span> <span class="o">=</span> <span class="mi">2010</span>
 <span class="n">end_yr</span> <span class="o">=</span> <span class="mi">2018</span>
 <span class="n">variable</span> <span class="o">=</span> <span class="s1">&#39;rain&#39;</span> <span class="c1"># other options are (&#39;tmin&#39;/ &#39;tmax&#39;)</span>
-<span class="n">imd</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">start_yr</span><span class="p">,</span> <span class="n">end_yr</span><span class="p">,</span> <span class="n">fn_format</span><span class="o">=</span><span class="s1">&#39;yearwise&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">imd</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">start_yr</span><span class="p">,</span> <span class="n">end_yr</span><span class="p">,</span> <span class="n">fn_format</span><span class="o">=</span><span class="s1">&#39;yearwise&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="section" id="output">
@@ -277,7 +274,7 @@ Download Successful !!!
 </pre></div>
 </div>
 <p>Save data in GeoTIFF format (if you have rioxarray library)</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">to_geotiff</span><span class="p">(</span><span class="s1">&#39;test.tif&#39;</span><span class="p">,</span> <span class="n">file_dir</span><span class="p">))</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">data</span><span class="o">.</span><span class="n">to_geotiff</span><span class="p">(</span><span class="s1">&#39;test.tif&#39;</span><span class="p">,</span> <span class="n">file_dir</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

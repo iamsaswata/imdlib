@@ -11,7 +11,7 @@ IMDLIB is capable of downloading gridded rainfall and temperature data (min and 
     start_yr = 2010
     end_yr = 2018
     variable = 'rain' # other options are ('tmin'/ 'tmax')
-    imd.get_data(variable, start_yr, end_yr, fn_format='yearwise')
+    data = imd.get_data(variable, start_yr, end_yr, fn_format='yearwise')
 
 Output
 ------
@@ -127,4 +127,4 @@ Save data in GeoTIFF format (if you have rioxarray library)
 
 .. code-block:: python
 
-    print(data.to_geotiff('test.tif', file_dir))
+    data.to_geotiff('test.tif', file_dir)

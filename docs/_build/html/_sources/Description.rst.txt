@@ -1,7 +1,9 @@
 Description
 ===========
 
-IMDLIB is a python package to download and handle binary grided data from India Meteorological Department (IMD). For more information about the IMD datasets, follow the following link: http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
+IMDLIB is a python package to download and handle binary grided data from India Meteorological Department (IMD). For more information about the IMD datasets, follow the following link: `IMD Pune`_.
+
+.. _IMD Pune: http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
 
 Installation
 ============
