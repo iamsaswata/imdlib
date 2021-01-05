@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'IMDLIB'
-copyright = '2020, Saswata Nandi and Pratiman Patel'
+copyright = '2021, Saswata Nandi and Pratiman Patel'
 author = 'Saswata Nandi and Pratiman Patel'
 
 
@@ -49,3 +49,4 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_extra_path = ["_html"]

@@ -1,10 +1,10 @@
 .. imdlib documentation master file, created by
-   sphinx-quickstart on Wed Dec 30 16:00:48 2020.
+   sphinx-quickstart on Wed Dec 30 16:00:48 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to imdlib's documentation!
-==================================
+IMDLIB - a Python library for IMD gridded data
+==============================================
 IMDLIB is a python package to download and handle binary grided data from India Meteorological
 Department (IMD). For more information about the IMD datasets, follow the following link:
 `IMD Pune`_. It heavily employes the `xarray`_ to produce the final netCDF datasets.
@@ -64,4 +64,6 @@ About
     * `Saswata Nandi <https://saswatanandi.github.io/>`__
     * `Pratiman Patel <https://pratiman-91.github.io/>`__
 
-
+.. meta::
+   :description: IMDLIB is a python package library to download IMD gridded data
+   :keywords: imdlib, IMDLIB, imd, IMD, python, India, gridded data
