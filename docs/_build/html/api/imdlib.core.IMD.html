@@ -1,0 +1,329 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>IMD &mdash; IMDLIB  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="LeapYear" href="imdlib.util.LeapYear.html" />
+    <link rel="prev" title="open_data" href="imdlib.core.open_data.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IMDLIB
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Description.html">Description</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Description.html#installation">Installation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html">Downloading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html#reading-imd-datasets">Reading IMD datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html#processing">Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html#plotting">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html#saving">Saving</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cf-conventions.html">CF conventions</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#top-level-functions">Top-level functions</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../api.html#module-imdlib.core">imdlib.core Module</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../api.html#functions">Functions</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../api.html#classes">Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api.html#module-imdlib.util">imdlib.util Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IMDLIB</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../api.html">API reference</a> &raquo;</li>
+        
+      <li>IMD</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/imdlib.core.IMD.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="imd">
+<h1>IMD<a class="headerlink" href="#imd" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="imdlib.core.IMD">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">imdlib.core.</span></code><code class="sig-name descname"><span class="pre">IMD</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_day</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_day</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_days</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imdlib.core.IMD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to handle binary (.grd) IMD gridded meteorological data.
+Currently rain, tmin and tmax variable processing is supported.</p>
+<dl class="simple">
+<dt>data<span class="classifier">numpy 3D array</span></dt><dd><p>Stores information in 3d numpy array.
+shape is (no_of_days, lon_size, lat_size).</p>
+</dd>
+<dt>cat<span class="classifier">str or None</span></dt><dd><p>Three possible values.
+1. “rain” -&gt; input files are for daily rainfall values
+2. “tmin” -&gt; input files are for daily minimum temperature values
+3. “tmax” -&gt; input files are for daily maximum tempereature values</p>
+</dd>
+<dt>start_day<span class="classifier">str</span></dt><dd><p>starting date in format of &lt;year(4 digit)-month(2 digit)-day(2 digit)&gt;
+e.g. (‘2018-01-01’)</p>
+</dd>
+<dt>end_day<span class="classifier">str</span></dt><dd><p>ending date in format of &lt;year(4 digit)-month(2 digit)-day(2 digit)&gt;
+e.g. (‘2018-12-31’)</p>
+</dd>
+</dl>
+<p>shape : show dimension of an IMD object</p>
+<p>get_xarray : return an xarray object from an IMD object</p>
+<p>to_netcdf : write an IMD object to a netcdf file</p>
+<p>to_csv : write an IMD object to a csv file</p>
+<p>to_ascii : write an IMD object to a ASCII/txt file</p>
+<p>IMD object</p>
+<p class="rubric">Attributes Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imdlib.core.IMD.shape" title="imdlib.core.IMD.shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods Summary</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imdlib.core.IMD.get_xarray" title="imdlib.core.IMD.get_xarray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_xarray</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#imdlib.core.IMD.to_csv" title="imdlib.core.IMD.to_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_csv</span></code></a>([file_name, lat, lon, out_dir])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imdlib.core.IMD.to_geotiff" title="imdlib.core.IMD.to_geotiff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_geotiff</span></code></a>([file_name, out_dir])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#imdlib.core.IMD.to_netcdf" title="imdlib.core.IMD.to_netcdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_netcdf</span></code></a>([file_name, out_dir])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes Documentation</p>
+<dl class="py attribute">
+<dt id="imdlib.core.IMD.shape">
+<code class="sig-name descname"><span class="pre">shape</span></code><a class="headerlink" href="#imdlib.core.IMD.shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods Documentation</p>
+<dl class="py method">
+<dt id="imdlib.core.IMD.get_xarray">
+<code class="sig-name descname"><span class="pre">get_xarray</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#imdlib.core.IMD.get_xarray" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="imdlib.core.IMD.to_csv">
+<code class="sig-name descname"><span class="pre">to_csv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imdlib.core.IMD.to_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="imdlib.core.IMD.to_geotiff">
+<code class="sig-name descname"><span class="pre">to_geotiff</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imdlib.core.IMD.to_geotiff" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="imdlib.core.IMD.to_netcdf">
+<code class="sig-name descname"><span class="pre">to_netcdf</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imdlib.core.IMD.to_netcdf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="imdlib.util.LeapYear.html" class="btn btn-neutral float-right" title="LeapYear" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="imdlib.core.open_data.html" class="btn btn-neutral float-left" title="open_data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Saswata Nandi and Pratiman Patel.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

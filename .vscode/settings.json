@@ -1,4 +1,4 @@
 {
-    "restructuredtext.confPath": "${workspaceFolder}/docs",
-    "python.pythonPath": "/home/ghost/miniconda3/envs/imdlib/bin/python"
+    "restructuredtext.confPath": "${workspaceFolder}\\docs",
+    "python.pythonPath": "C:\\Users\\Ghost\\miniconda3\\envs\\imdlib\\python.exe"
 }
