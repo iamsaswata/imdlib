@@ -3,9 +3,9 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>CF conventions &mdash; IMDLIB  documentation</title>
   
@@ -13,10 +13,14 @@
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
 
   
   
+
   
+  
+
   
 
   
@@ -35,6 +39,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API reference" href="api.html" />
     <link rel="prev" title="Changelog History" href="changelog.html" /> 
 </head>
 
@@ -49,7 +54,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> IMDLIB
+            <a href="index.html" class="icon icon-home"> IMDLIB
           
 
           
@@ -101,6 +106,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#netcdf-file-convention">NetCDF File Convention</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API reference</a></li>
 </ul>
 
             
@@ -141,6 +147,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -152,7 +160,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="_sources/cf-conventions.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -170,9 +178,7 @@
 <span id="id1"></span><h1>CF conventions<a class="headerlink" href="#cf-conventions" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="netcdf-file-convention">
 <h2>NetCDF File Convention<a class="headerlink" href="#netcdf-file-convention" title="Permalink to this headline">¶</a></h2>
-<p>The IMDLIB focuses on producing netCDF (network Common Data Form) based final output as
-it is the most commonly data format in climate science and hydrological studies. The netCDF Climate and Forecast (CF) Metadata Conventions, Version 1.7, has been adopted by IMDLIB for its efficient and consistent use with other standard netCDF based tool/applications. The epsg:4326 coordinate reference systems (CRS) is considered in CF naming convention and is
-vital for the function to_geotiff to work correctly. For more information on the CF convention, users are requested to visit CF Conventions Home Page and xarray &amp; CF integration resources.</p>
+<p>The IMDLIB produces netCDF (network Common Data Form) based final output. It is the most common data format in climate science and hydrological studies. The netCDF Climate and Forecast (CF) Metadata Conventions, Version 1.7, has been adopted by IMDLIB for its efficient and consistent use with other standard netCDF based tool/applications. The EPSG:4326 coordinate reference systems (CRS) are considered in the CF naming convention. They are vital for the function to_geotiff to work correctly. For more information on the CF convention, users must visit CF Conventions Home Page and xarray &amp; CF integration resources.</p>
 <a class="reference internal image-reference" href="_images/fig2.jpg"><img alt="_images/fig2.jpg" src="_images/fig2.jpg" style="width: 700px;" /></a>
 </div>
 </div>
@@ -182,35 +188,29 @@ vital for the function to_geotiff to work correctly. For more information on the
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-      
-        <a href="changelog.html" class="btn btn-neutral float-left" title="Changelog History" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="api.html" class="btn btn-neutral float-right" title="API reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="changelog.html" class="btn btn-neutral float-left" title="Changelog History" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Saswata Nandi and Pratiman Patel
+        &#169; Copyright 2021, Saswata Nandi and Pratiman Patel.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

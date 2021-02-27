@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 # imdlib version
-VERSION = "0.1.9"
+VERSION = "0.1.10"
 
 def readme():
     """print long description"""
@@ -20,7 +20,7 @@ def readme():
 
 setup(
     name="imdlib",
-    version="0.1.9",
+    version="0.1.10",
     author="Saswata Nandi",
     author_email="iamsaswata@yahoo.com",
     description="A tool for handling and downloading IMD gridded data",
@@ -33,7 +33,7 @@ setup(
                  "Programming Language :: Python :: 3",
                  "License :: OSI Approved :: MIT License",
                  "Operating System :: OS Independent",
-                 "Development Status :: 4 - Beta",
+                 "Development Status :: 5 - Beta",
                  "Intended Audience :: Developers",
                  "Intended Audience :: Science/Research",
                  "License :: OSI Approved :: MIT License",
@@ -51,7 +51,7 @@ setup(
                       'pandas',
                       'python-dateutil',
                       'pytz',
-                      'requests',
+                      'urllib3',
                       'scipy',
                       'xarray', ]   
 )

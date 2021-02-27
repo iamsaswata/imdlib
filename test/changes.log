@@ -1,0 +1,4 @@
+1. Remove requests as dependency [Done]
+2. Adding api references [Done]
+3. Improve the typos
+4. to_csv added better csv file with dates [Done]
