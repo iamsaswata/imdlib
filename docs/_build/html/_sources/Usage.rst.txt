@@ -82,17 +82,22 @@ Getting the xarray object for further processing.
 
 .. code-block:: python
 
-    <xarray.DataArray 'rain' (lat: 129, lon: 135, time: 3287)>
-    ...
-    ...
-    ...
+    <xarray.Dataset>
+    Dimensions:  (lat: 129, lon: 135, time: 3287)
     Coordinates:
     * lat      (lat) float64 6.5 6.75 7.0 7.25 7.5 ... 37.5 37.75 38.0 38.25 38.5
     * lon      (lon) float64 66.5 66.75 67.0 67.25 67.5 ... 99.25 99.5 99.75 100.0
     * time     (time) datetime64[ns] 2010-01-01 2010-01-02 ... 2018-12-31
+    Data variables:
+        rain     (time, lat, lon) float64 -999.0 -999.0 -999.0 ... -999.0 -999.0
     Attributes:
-    long_name:  rainfall
-    units:      mm/day
+        Conventions:  CF-1.7
+        title:        IMD gridded data
+        source:       https://imdpune.gov.in/
+        history:      2021-02-27 08:10:43.519783 Python
+        references:   
+        comment:      
+        crs:          epsg:4326
 
 
 Plotting
@@ -100,8 +105,9 @@ Plotting
 
 .. code-block:: python
 
-    ds.mean('time').plot()
-
+    ds = ds.where(ds['rain'] != -999.) #Remove NaN values
+    ds['rain'].mean('time').plot()
+    
 .. image:: savefig/fig1.png
    :width: 400
 
