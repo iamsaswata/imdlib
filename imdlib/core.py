@@ -1,5 +1,5 @@
 """
-(c) by Saswata Nandi and Pratiman Patel
+Developed by Saswata Nandi and Pratiman Patel
 """
 
 import array
@@ -80,9 +80,9 @@ class IMD(object):
             ext='.csv'
 
         # check lat and lon are in the feasible range
-        print(lat)
-        print(max(self.lat_array))
-        print(min(self.lat_array))        
+        #print(lat)
+        #print(max(self.lat_array))
+        #print(min(self.lat_array))        
         if lat is not None and lon is not None:
             if lat > max(self.lat_array) and lat < min(self.lat_array):
                 raise Exception("Error in given lat coordinates."
@@ -93,7 +93,7 @@ class IMD(object):
 
         if lat is None and lon is None:
             print("Latitude and Longitude are not given!!")
-            print("Converting 3D data to 2d data!!")
+            print("Converting 3D data to 2D data!!")
             print("You should reconsider this operation!!")
             outname = root + ext
             self.get_xarray().to_dataframe().to_csv(outname)
@@ -119,12 +119,20 @@ class IMD(object):
             else:
                 outname = "{}{}{:.2f}{}{:.2f}{}".format(root, '_',
                                                         lat, '_', lon, ext)
-
-            pd.DataFrame(self.data[:, lon_index, lat_index]
-                         ).to_csv(outname,
-                                  index=False,
-                                  header=None,
-                                  float_format='%.4f')
+            csv = pd.DataFrame(self.data[:, lon_index, lat_index], 
+                                index=pd.date_range(start=self.start_day,
+                                end=self.end_day,freq='D'))
+            #csv = csv.columns(str(lat) + str(lon))                    
+            #pd.DataFrame(self.data[:, lon_index, lat_index]
+            #             ).to_csv(outname,
+            #                      index=True,
+            #                      header=True,
+            #                      float_format='%.4f')
+            csv.to_csv(outname,
+                        index=True,
+                        index_label='DateTime',
+                        header=[str(lat) + ' ' + str(lon)],
+                        float_format='%.4f')
 
     def get_xarray(self):
 
@@ -212,9 +220,7 @@ class IMD(object):
 
 
 def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
-    """
-    get_data(time_range, var_type, proxies=None, fn_format=None, file_dir=None, sub_dir=False):
-    
+    """   
     Function to read binary data and return an IMD class object
     time range is tuple or list or numpy array of 2 int number
 
