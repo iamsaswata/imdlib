@@ -77,19 +77,16 @@ class IMD(object):
 
         root, ext = os.path.splitext(file_name)
         if not ext:
-            ext='.csv'
+            ext = '.csv'
 
         # check lat and lon are in the feasible range
-        #print(lat)
-        #print(max(self.lat_array))
-        #print(min(self.lat_array))        
         if lat is not None and lon is not None:
             if lat > max(self.lat_array) and lat < min(self.lat_array):
                 raise Exception("Error in given lat coordinates."
                                 "Given lat value is not in the IMD data range!! ")
             if lon > max(self.lon_array) and lon < min(self.lon_array):
                 raise Exception("Error in in given lon coordinates."
-                                "Given lon value is not in the IMD data range!! ")            
+                                "Given lon value is not in the IMD data range!! ")
 
         if lat is None and lon is None:
             print("Latitude and Longitude are not given!!")
@@ -98,7 +95,7 @@ class IMD(object):
             outname = root + ext
             self.get_xarray().to_dataframe().to_csv(outname)
 
-        elif sum([bool(lat), bool(lon)])==1:
+        elif sum([bool(lat), bool(lon)]) == 1:
             raise Exception("Error in lat lon setting."
                             "One of them is set and the other one remained unset!! ")
         else:
@@ -119,20 +116,20 @@ class IMD(object):
             else:
                 outname = "{}{}{:.2f}{}{:.2f}{}".format(root, '_',
                                                         lat, '_', lon, ext)
-            csv = pd.DataFrame(self.data[:, lon_index, lat_index], 
-                                index=pd.date_range(start=self.start_day,
-                                end=self.end_day,freq='D'))
-            #csv = csv.columns(str(lat) + str(lon))                    
-            #pd.DataFrame(self.data[:, lon_index, lat_index]
+            csv = pd.DataFrame(self.data[:, lon_index, lat_index],
+                               index=pd.date_range(start=self.start_day,
+                                                   end=self.end_day, freq='D'))
+            #csv = csv.columns(str(lat) + str(lon))
+            # pd.DataFrame(self.data[:, lon_index, lat_index]
             #             ).to_csv(outname,
             #                      index=True,
             #                      header=True,
             #                      float_format='%.4f')
             csv.to_csv(outname,
-                        index=True,
-                        index_label='DateTime',
-                        header=[str(lat) + ' ' + str(lon)],
-                        float_format='%.4f')
+                       index=True,
+                       index_label='DateTime',
+                       header=[str(lat) + ' ' + str(lon)],
+                       float_format='%.4f')
 
     def get_xarray(self):
 
@@ -143,33 +140,33 @@ class IMD(object):
         time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
         if self.cat == 'rain':
             xr_da = xr.Dataset({'rain': (['time', 'lat', 'lon'], data_xr,
-                {'units': 'mm/day', 'long_name': 'Rainfall'})},
-                                 coords={'lat': self.lat_array,
-                                         'lon': self.lon_array, 'time': time})
+                                         {'units': 'mm/day', 'long_name': 'Rainfall'})},
+                               coords={'lat': self.lat_array,
+                                       'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != -999.)
         elif self.cat == 'tmin':
             xr_da = xr.Dataset({'tmin': (['time', 'lat', 'lon'], data_xr,
-                {'units': 'C', 'long_name': 'Mainimum Temperature'})},
-                                 coords={'lat': self.lat_array,
-                                         'lon': self.lon_array, 'time': time})
+                                         {'units': 'C', 'long_name': 'Mainimum Temperature'})},
+                               coords={'lat': self.lat_array,
+                                       'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != data_xr[0, 0, 0])
         elif self.cat == 'tmax':
             xr_da = xr.Dataset({'tmax': (['time', 'lat', 'lon'], data_xr,
-                {'units': 'C', 'long_name': 'Maximum Temperature'})},
-                                 coords={'lat': self.lat_array,
-                                         'lon': self.lon_array, 'time': time})
+                                         {'units': 'C', 'long_name': 'Maximum Temperature'})},
+                               coords={'lat': self.lat_array,
+                                       'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != data_xr[0, 0, 0])
 
-        xr_da_masked.time.encoding['units']=time_units
+        xr_da_masked.time.encoding['units'] = time_units
         xr_da_masked.time.attrs['standard_name'] = 'time'
         xr_da_masked.time.attrs['long_name'] = 'time'
 
-        xr_da_masked.lon.attrs['axis'] = 'X' # Optional
+        xr_da_masked.lon.attrs['axis'] = 'X'  # Optional
         xr_da_masked.lon.attrs['long_name'] = 'longitude'
         xr_da_masked.lon.attrs['long_name'] = 'longitude'
         xr_da_masked.lon.attrs['units'] = 'degrees_east'
 
-        xr_da_masked.lat.attrs['axis'] = 'Y' # Optional
+        xr_da_masked.lat.attrs['axis'] = 'Y'  # Optional
         xr_da_masked.lat.attrs['standard_name'] = 'latitude'
         xr_da_masked.lat.attrs['long_name'] = 'latitude'
         xr_da_masked.lat.attrs['units'] = 'degrees_north'
@@ -191,7 +188,7 @@ class IMD(object):
 
         root, ext = os.path.splitext(file_name)
         if not ext:
-            ext='.nc'
+            ext = '.nc'
 
         xr_da_masked = self.get_xarray()
         if out_dir is not None:
@@ -207,7 +204,7 @@ class IMD(object):
                 file_name = 'test'
             root, ext = os.path.splitext(file_name)
             if not ext:
-                ext='.tif'
+                ext = '.tif'
             xr_da_masked = self.get_xarray()
             if out_dir is not None:
                 outname = "{}{}{}{}".format(out_dir, '/', root, ext)
@@ -215,8 +212,7 @@ class IMD(object):
                 outname = "{}{}".format(root, ext)
             xr_da_masked[self.cat].rio.to_raster(outname)
         except:
-            raise Exception ("rioxarray is not installed")                              
-
+            raise Exception("rioxarray is not installed")
 
 
 def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
@@ -273,7 +269,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     # Format Date into <yyyy-mm-dd>
 
     # Handling ending year not given case
-    if sum([bool(start_yr), bool(end_yr)])==1:
+    if sum([bool(start_yr), bool(end_yr)]) == 1:
         end_yr = start_yr
 
     start_day = "{}{}{:02d}{}{:02d}".format(start_yr, '-', 1, '-', 1)
@@ -299,7 +295,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     all_data = np.empty((no_days, lon_size_class, lat_size_class))
     # Counter for total days. It helps filling 'all_data' array.
     count_day = 0
-    for i in range(start_yr, end_yr+1):
+    for i in range(start_yr, end_yr + 1):
 
         # Decide resolution of input file name
         fname = get_filename(i, var_type, fn_format, file_dir)
@@ -311,7 +307,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
             days_in_year = 365
 
         # length of total data point for current year
-        nlen = days_in_year*lat_size_class*lon_size_class
+        nlen = days_in_year * lat_size_class * lon_size_class
 
         # temporary variable to read binary data
         temp = array.array("f")
@@ -328,8 +324,8 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         # Reshape data into a shape of
         # (days_in_year, lon_size_class, lat_size_class)
         data = np.transpose(np.reshape(data, (days_in_year, lat_size_class,
-                            lon_size_class), order='C'), (0, 2, 1))
-        all_data[count_day:count_day+len(data), :, :] = data
+                                              lon_size_class), order='C'), (0, 2, 1))
+        all_data[count_day:count_day + len(data), :, :] = data
         count_day += len(data)
         # Stack data vertically to get multi-year data
         # if i != time_range[0]:
@@ -352,7 +348,6 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
                         "It must be 'rain'/'tmin'/'tmax'. ")
 
     return data
-
 
 
 def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub_dir=False, proxies=None):
@@ -404,7 +399,7 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
 
     """
 
-    if var_type=='rain':
+    if var_type == 'rain':
         var = 'rain'
         url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/rainfall.php'
         fini = 'Rainfall_ind'
@@ -412,12 +407,12 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             fend = '.grd'
         else:
             fend = '_rfp25.grd'
-    elif var_type=='tmax':
+    elif var_type == 'tmax':
         var = 'maxtemp'
         url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/maxtemp.php'
         fini = 'Maxtemp_MaxT_'
         fend = '.GRD'
-    elif var_type=='tmin':
+    elif var_type == 'tmin':
         var = 'mintemp'
         url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/mintemp.php'
         fini = 'Mintemp_MinT_'
@@ -427,10 +422,10 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
                         "It must be 'rain'/'tmin'/'tmax'. ")
 
     # Handling ending year not given case
-    if sum([bool(start_yr), bool(end_yr)])==1:
+    if sum([bool(start_yr), bool(end_yr)]) == 1:
         end_yr = start_yr
 
-    years = np.arange(start_yr, end_yr+1)
+    years = np.arange(start_yr, end_yr + 1)
 
     # Handling location for saving data
     if file_dir is not None:
@@ -455,22 +450,24 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
                     os.mkdir(var_type)
 
     try:
-        for year in years: 
+        for year in years:
             # Setting parameters
             print("Downloading: " + var + " for year " + str(year))
-            
+
             data = {var: year}
-            # Requesting the dataset 
+            # Requesting the dataset
             response = requests.post(url, data=data, proxies=proxies)
             response.raise_for_status()
 
             # Setting file name
             if file_dir is not None:
                 if fn_format == 'yearwise':
-                    fname = os.path.join(file_dir, var_type) + '/' + str(year) + fend
+                    fname = os.path.join(file_dir, var_type) + \
+                        '/' + str(year) + fend
                 else:
                     if sub_dir:
-                        fname = os.path.join(file_dir, var_type) + '/' + fini + str(year) + fend
+                        fname = os.path.join(
+                            file_dir, var_type) + '/' + fini + str(year) + fend
                     else:
                         fname = fini + str(year) + fend
             else:
@@ -485,7 +482,6 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             # Saving file
             with open(fname, 'wb') as f:
                 f.write(response.content)
-
 
         print("Download Successful !!!")
 
