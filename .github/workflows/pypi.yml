@@ -61,3 +61,18 @@ jobs:
         echo $CONDA
         echo $PATH
         conda install -y -c anaconda python=3.6
+        conda install -y conda-build
+        conda install -y anaconda-client
+        pip install tqdm
+        pip install pytest pytest-cov
+        pip install -r requirements.txt
+        pkg='imdlib'
+        echo $PWD
+        array=( 3.6 )
+        echo "Building conda package ..."
+        cd ~
+        echo $PWD
+        conda skeleton pypi $pkg
+        cd $pkg
+        echo $PWD
+        cd ~
