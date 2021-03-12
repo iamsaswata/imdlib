@@ -1,6 +1,6 @@
 package:
   name: imdlib
-  version: 0.1.10
+  version: 0.1.11
 build:
   script_env:
    - VERSION
