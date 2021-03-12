@@ -1,5 +1,6 @@
 #!/bin/bash
 echo "========================"
+echo "========================"
 echo "Showing home directory"
 echo $HOME
 ls
@@ -12,6 +13,7 @@ ls
 echo "========================"
 
 echo "========================"
+echo "========================"
 echo "Setting up miniconda"
 chmod +x miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
@@ -19,6 +21,7 @@ export PATH="$HOME/miniconda/bin:$PATH"
 echo "========================"
 
 
+echo "========================"
 echo "========================"
 echo "Update miniconda"
 conda install -y -c anaconda python=3.6
@@ -28,7 +31,15 @@ conda install -y conda-build
 conda install -y anaconda-client
 echo "========================"
 
+echo "========================"
+echo "========================"
+echo "install requirements.tt"
+pip install -r requirements.txt
+echo "========================"
 
+
+echo "========================"
+echo "======================"
 # change the package name to the existing PyPi package you would like to build
 pkg='imdlib'
 echo $PWD
@@ -40,6 +51,21 @@ conda skeleton pypi $pkg
 cd $pkg
 echo $PWD
 cd ~
+echo "======================"
+
+
+echo "========================"
+echo "======================"
+echo "Building conda packages"
+
+echo $PWD
+for i in "${array[@]}"
+do
+	conda-build --python $i $pkg
+done
+echo "========================"
+
+
 
 # building conda packages
 # echo "========================"
