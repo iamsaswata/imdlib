@@ -88,6 +88,20 @@ echo "Converting finished"
 echo "========================="
 
 
+echo "========================="
+echo "Uploading conda packages"
+echo "========================="
+find $HOME/miniconda/conda-bld/ -name *.tar.bz2 | while read file
+do
+    echo $file
+    anaconda -t $ANACONDA_TOKEN upload $file
+done
+echo "Building conda package done!"
+echo "==================================="
+echo "Succeessful submission to anaconda"
+echo "==================================="
+
+
 # building conda packages
 # echo "========================"
 # echo "Building conda packages"
