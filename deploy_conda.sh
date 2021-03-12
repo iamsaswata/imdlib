@@ -67,6 +67,27 @@ echo "========================"
 
 
 
+# convert package to other platforms
+echo "========================="
+echo "Converting conda packages"
+echo "========================="
+cd ~
+echo $PWD
+platforms=( linux-64 win-64 )
+find $HOME/miniconda/conda-bld/linux-64/ -name *.tar.bz2 | while read file
+do
+    echo $file
+    #conda convert --platform all $file  -o $HOME/conda-bld/
+    for platform in "${platforms[@]}"
+    do
+       conda convert --platform $platform $file  -o $HOME/miniconda/conda-bld/
+    done    
+done
+echo "========================="
+echo "Converting finished"
+echo "========================="
+
+
 # building conda packages
 # echo "========================"
 # echo "Building conda packages"
