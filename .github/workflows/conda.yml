@@ -1,7 +1,7 @@
-# This workflows will upload a Python Package using Twine
+# This workflows will upload a Python Package using Twine when a release is created
 # For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
 
-name: pypi
+name: conda
 
 # Controls when the action will run.   
 on:
@@ -22,18 +22,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools wheel twine
-    - name: Build and publish
+    - name: Run conda bash script
       env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERS }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: |
-        python setup.py sdist bdist_wheel
-        twine upload dist/*
+        ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}        
+      run: bash deploy_conda.sh
