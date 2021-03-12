@@ -13,10 +13,12 @@ from setuptools.command.install import install
 # imdlib version
 VERSION = "0.1.10"
 
+
 def readme():
-    """print long description"""
-    with open('README.md') as f:
-        return f.read()
+  """print long description"""
+  with open('README.md') as f:
+    return f.read()
+
 
 setup(
     name="imdlib",
@@ -38,8 +40,8 @@ setup(
                  "Intended Audience :: Science/Research",
                  "License :: OSI Approved :: MIT License",
                  "Operating System :: OS Independent",
-                 "Topic :: Scientific/Engineering :: Hydrology",                 
-                ],
+                 "Topic :: Scientific/Engineering :: Hydrology",
+    ],
     python_requires='>=3.0',
 
     keywords='imd, India, rainfall, data, hydrology, IMD, grid, grided, gridded',
@@ -53,5 +55,6 @@ setup(
                       'pytz',
                       'urllib3',
                       'scipy',
-                      'xarray', ]   
+                      'xarray',
+                      'requests', ]
 )
