@@ -25,7 +25,7 @@ done
 
 # convert package to other platforms
 echo "========================="
-echo "Cinverting conda packages"
+echo "Converting conda packages"
 echo "========================="
 cd ~
 echo $PWD
@@ -39,18 +39,21 @@ do
        conda convert --platform $platform $file  -o $HOME/miniconda/conda-bld/
     done    
 done
+echo "========================="
+echo "Converting finished"
+echo "========================="
 
 
 # upload packages to conda
-echo "========================="
-echo "Uploading conda packages"
-echo "========================="
-find $HOME/miniconda/conda-bld/ -name *.tar.bz2 | while read file
-do
-    echo $file
-    anaconda -t $ANACONDA_TOKEN upload $file
-done
-echo "Building conda package done!"
-echo "==================================="
-echo "Succeessful submission to anaconda"
-echo "==================================="
+# echo "========================="
+# echo "Uploading conda packages"
+# echo "========================="
+# find $HOME/miniconda/conda-bld/ -name *.tar.bz2 | while read file
+# do
+#     echo $file
+#     anaconda -t $ANACONDA_TOKEN upload $file
+# done
+# echo "Building conda package done!"
+# echo "==================================="
+# echo "Succeessful submission to anaconda"
+# echo "==================================="

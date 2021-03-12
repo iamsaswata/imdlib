@@ -57,3 +57,5 @@ jobs:
         conda list
         conda config --show-sources
         conda config --show
+        conda config --set always_yes true --set changeps1 no
+        bash deploy_conda.sh
