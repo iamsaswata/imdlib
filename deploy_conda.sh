@@ -1,4 +1,33 @@
 #!/bin/bash
+echo "========================"
+echo "Showing home directory"
+echo $HOME
+ls
+echo "========================"
+
+echo "========================"
+echo "Downaloading miniconda"
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+ls
+echo "========================"
+
+echo "========================"
+echo "Setting up miniconda"
+chmod +x miniconda.sh
+bash miniconda.sh -b -p $HOME/miniconda
+export PATH="$HOME/miniconda/bin:$PATH"
+echo "========================"
+
+
+echo "========================"
+echo "Update miniconda"
+conda install -y -c anaconda python=3.6
+conda config --set always_yes true --set changeps1 no
+conda update -q conda
+conda install -y conda-build
+conda install -y anaconda-client
+echo "========================"
+
 
 # change the package name to the existing PyPi package you would like to build
 pkg='imdlib'
