@@ -1,6 +1,5 @@
 # imdlib
-
-[![Build Status](https://travis-ci.org/iamsaswata/imdlib.svg?branch=master)](https://travis-ci.org/iamsaswata/imdlib)
+[![Build Status](https://github.com/iamsaswata/imdlib/actions/workflows/pypi.yml/badge.svg)](https://github.com/iamsaswata/imdlib/actions/workflows/pypi.yml)
 ![GitHub](https://img.shields.io/github/license/iamsaswata/imdlib)
 ![PyPI](https://img.shields.io/pypi/v/imdlib)
 ![Conda](https://img.shields.io/conda/v/iamsaswata/imdlib)
