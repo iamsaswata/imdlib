@@ -15,29 +15,6 @@ on:
   # # Allows you to run this workflow manually from the Actions tab  
   # workflow_dispatch:
 
-# jobs:
-#   deploy:
-
-#     runs-on: ubuntu-latest
-
-#     steps:
-#     - uses: actions/checkout@v2
-#     - name: Set up Python
-#       uses: actions/setup-python@v2
-#       with:
-#         python-version: '3.x'
-#     - name: Install dependencies
-#       run: |
-#         python -m pip install --upgrade pip
-#         pip install setuptools wheel twine
-#     - name: Build and publish
-#       env:
-#         TWINE_USERNAME: ${{ secrets.PYPI_USERS }}
-#         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-#       run: |
-#         python setup.py sdist bdist_wheel
-#         twine upload dist/*
-
 jobs:
   deploy:
 
@@ -45,8 +22,31 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    # Runs a single command using the runners shell  
-    - name: Run a one-line script  
-      run: echo Hello, world!
-    - name: Run conda bash script  
-      run: bash deploy_conda.sh
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+    - name: Build and publish
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERS }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        python setup.py sdist bdist_wheel
+        twine upload dist/*
+
+# jobs:
+#   deploy:
+
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - uses: actions/checkout@v2
+#     # Runs a single command using the runners shell  
+#     - name: Run a one-line script  
+#       run: echo Hello, world!
+#     - name: Run conda bash script  
+#       run: bash deploy_conda.sh
