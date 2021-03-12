@@ -52,57 +52,10 @@ jobs:
         auto-activate-base: false
         auto-update-conda: false
     - run: |
-        conda info
-        conda list
-        conda config --show-sources
-        conda config --show
         conda config --set always_yes true --set changeps1 no
-        echo $PWD
-        ls
-        echo $CONDA
-        echo $PATH
         conda install -y -c anaconda python=3.6
+        conda update -q conda
         conda install -y conda-build
+        conda update -q conda-build
         conda install -y anaconda-client
-        pip install tqdm
-        pip install pytest pytest-cov
-        pip install -r requirements.txt
-        pkg='imdlib'
-        echo $PWD
-        array=( 3.6 )
-        echo "Building conda package ..."
-        cd ~
-        ls
-        echo $PWD
-        conda skeleton pypi $pkg
-        cd $pkg
-        ls
-        echo $PWD
-        cd ~
-        ls
-        echo "========================"
-        echo "Building conda packages"
-        echo "========================"
-        echo $PWD
-        for i in "${array[@]}"
-        do
-        conda-build --python $i $pkg
-        done
-        echo "========================="
-        echo "Converting conda packages"
-        echo "========================="
-        cd ~
-        echo $PWD
-        ls
-        platforms=( linux-64 win-64 )
-        find /usr/share/miniconda/conda-bld/linux-64/ -name *.tar.bz2 | while read file
-        do
-        echo $file
-        for platform in "${platforms[@]}"
-        do
-        conda convert --platform $platform $file  -o /usr/share/miniconda/conda-bld/
-        done    
-        done
-        echo "========================="
-        echo "Converting finished"
-        echo "========================="        
+        conda-build
