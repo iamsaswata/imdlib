@@ -52,8 +52,8 @@ jobs:
         activate-environment: test_env
         auto-activate-base: false
         auto-update-conda: true
-      run: |
-        conda info
-        conda list
-        conda config --show-sources
-        conda config --show
+    - run: |
+      conda info
+      conda list
+      conda config --show-sources
+      conda config --show
