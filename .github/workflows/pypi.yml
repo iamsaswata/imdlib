@@ -45,17 +45,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: test_env
-        auto-activate-base: false
-        auto-update-conda: false
-    - run: |
-        conda config --set always_yes true --set changeps1 no
-        conda install -y -c anaconda python=3.6
-        conda update -q conda
-        conda install -y conda-build
-        conda update -q conda-build
-        conda install -y anaconda-client
-        conda-build
+    # Runs a single command using the runners shell  
+    - name: Run a one-line script  
+      run: echo Hello, world!
+    - name: Run conda bash script  
+      run: bash deploy_conda.sh
