@@ -13,35 +13,35 @@ echo $PWD
 cd ~
 
 # building conda packages
-# echo "========================"
-# echo "Building conda packages"
-# echo "========================"
-# echo $PWD
-# for i in "${array[@]}"
-# do
-# 	conda-build --python $i $pkg
-# done
+echo "========================"
+echo "Building conda packages"
+echo "========================"
+echo $PWD
+for i in "${array[@]}"
+do
+	conda-build --python $i $pkg
+done
 
 
-# # convert package to other platforms
-# echo "========================="
-# echo "Converting conda packages"
-# echo "========================="
-# cd ~
-# echo $PWD
-# platforms=( linux-64 win-64 )
-# find $HOME/miniconda/conda-bld/linux-64/ -name *.tar.bz2 | while read file
-# do
-#     echo $file
-#     #conda convert --platform all $file  -o $HOME/conda-bld/
-#     for platform in "${platforms[@]}"
-#     do
-#        conda convert --platform $platform $file  -o $HOME/miniconda/conda-bld/
-#     done    
-# done
-# echo "========================="
-# echo "Converting finished"
-# echo "========================="
+# convert package to other platforms
+echo "========================="
+echo "Converting conda packages"
+echo "========================="
+cd ~
+echo $PWD
+platforms=( linux-64 win-64 )
+find $HOME/miniconda/conda-bld/linux-64/ -name *.tar.bz2 | while read file
+do
+    echo $file
+    #conda convert --platform all $file  -o $HOME/conda-bld/
+    for platform in "${platforms[@]}"
+    do
+       conda convert --platform $platform $file  -o $HOME/miniconda/conda-bld/
+    done    
+done
+echo "========================="
+echo "Converting finished"
+echo "========================="
 
 
 # upload packages to conda
