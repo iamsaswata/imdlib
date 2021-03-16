@@ -63,7 +63,7 @@ About
 :Contact:
     * `Saswata Nandi <https://saswatanandi.github.io/>`__
     * `Pratiman Patel <https://pratiman-91.github.io/>`__
-    * `Sabyasachi Swain <https://scholar.google.co.in/citations?user=5l3ePBUAAAAJ/>`__
+    * `Sabyasachi Swain <https://scholar.google.co.in/citations?user=5l3ePBUAAAAJ&hl=en&oi=ao/>`__
 
 .. meta::
    :description: IMDLIB is a python package library to download IMD gridded data
