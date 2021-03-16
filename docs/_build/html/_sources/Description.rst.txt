@@ -1,7 +1,7 @@
 Description
 ===========
 
-IMDLIB is a python package to download and handle binary grided data from India Meteorological Department (IMD). For more information about the IMD datasets, check the following link: `IMD Pune`_.
+IMDLIB is a python package to download and handle binary gridded data from the India Meteorological Department (IMD). For more information about the IMD datasets, check the following link: `IMD Pune`_.
 
 .. _IMD Pune: https://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
 
@@ -10,27 +10,27 @@ Installation
 
 IMDLIB is tested for both Windows and Linux platforms with 64-bit architecture.
 
-The recommended way to install IMDLIB is using conda.
+We recommend using ‘Conda’  to install IMDLIB.
 
 .. code-block:: bash
 
     conda install -c iamsaswata imdlib
 
-Installation using pip.
+Installation using pip:
 
 .. code-block:: bash
 
     pip install imdlib
 
-Installation from source/development version.
+Installation from source/development version:
 
 .. code-block:: bash
 
     pip install git+https://github.com/iamsaswata/imdlib.git
 
-Dependencies
+Dependency
 ------------
-IMDLIB is currently built with the following plugins. You need to have a python version >= 3.5 and install the below dependencies before installing IMDLIB from source.
+You need to have a python version 3.5 or higher for using IMDLIB. If you install IMDLIB from the source, the following plugins should be pre-installed.
 
 .. list-table::
    :widths: 20 20

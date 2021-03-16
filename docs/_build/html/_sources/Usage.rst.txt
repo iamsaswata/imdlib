@@ -1,13 +1,13 @@
 Downloading
 ===========
 
-IMDLIB is capable of downloading gridded rainfall and temperature data (min and max). Here is an example of downloading rainfall dataset from 2010 to 2018.
+IMDLIB is capable of downloading gridded rainfall and temperature (minimum and maximum) data. Here is an example of downloading rainfall data from 2010 to 2018:
 
 .. code-block:: python
 
     import imdlib as imd
 
-    # Downloading 8 years of rainfall data for India
+    # Downloading 9 years of rainfall data for India
     start_yr = 2010
     end_yr = 2018
     variable = 'rain' # other options are ('tmin'/ 'tmax')
@@ -29,13 +29,12 @@ Output
     Downloading: rain for year 2018
     Download Successful !!!
 
-The output is saved in the current working directory. If you want to save the files to a different directory, then you can use following code:
+The output is saved in the current working directory. If you want to save the files to a different directory, then you can use the following code:
 
 .. code-block:: python
 
     import imdlib as imd
 
-    # Downloading 8 years of rainfall data for India
     start_yr = 2010
     end_yr = 2018
     variable = 'rain' # other options are ('tmin'/ 'tmax')
@@ -45,13 +44,12 @@ The output is saved in the current working directory. If you want to save the fi
 Reading IMD datasets
 ====================
 
-One major purposes of IMDLIB is to process IMD’s gridded dataset. The original data is available in ``grd`` file format. IMDLIB can read ``grd`` file in ``xarray`` and will create a ``IMD class object``.
+One of the major purposes of IMDLIB is to process IMD’s gridded datasets. The original data is available in ``grd`` file format. IMDLIB can read ``grd`` file in ``xarray`` and will create an ``IMD class object``.
 
 .. code-block:: python
 
     import imdlib as imd
 
-    # Downloading 8 years of rainfall data for India
     start_yr = 2010
     end_yr = 2018
     variable = 'rain' # other options are ('tmin'/ 'tmax')
@@ -59,16 +57,18 @@ One major purposes of IMDLIB is to process IMD’s gridded dataset. The original
     data = imd.open_data(variable, start_yr, end_yr,'yearwise', file_dir)
     data
 
+.. [*] This step is for reading IMD datasets after they are downloaded. If you have the data already downloaded and stored locally, you can directly use this step to read the datasets.
+
 Output
 ------
 
 ``<imdlib.core.IMD at 0x13e5b3753c8>``
 
-- ``file_dir`` should refer to top-lev directory. It should contain 3 sub-directories ``rain``, ``tmin``, and ``tmax``.
+- ``file_dir`` should refer to top-level directory. It should contain 3 sub-directories ``rain``, ``tmin``, and ``tmax``.
 
-- if ``file_dir`` exist, but no subdirectory, it will try to find the files in ``file_dir``. But be careful if you are using ``file_format = ‘yearwise’``, as it will not differentiate between ``2018.grd`` for rainfall and ``2018.grd`` for tmin.
+- If ``file_dir`` exists without any subdirectory, IMDLIB will look for the files in ``file_dir``. But be careful if you are using ``file_format = ‘yearwise’``, as it will not differentiate between  the datasets, ``2018.grd`` for rainfall and ``2018.grd`` for tmin.
 
-- if ``file_dir`` is not given, it will look for the associate subdirectories and files from the current directory.
+- If ``file_dir`` is not given, it will look for the adatasets from the current directory and its subdirectories.
 
 Processing
 ==========
@@ -103,6 +103,8 @@ Getting the xarray object for further processing.
 Plotting
 ========
 
+Plotting can be done by:
+
 .. code-block:: python
 
     ds = ds.where(ds['rain'] != -999.) #Remove NaN values
@@ -115,7 +117,7 @@ Plotting
 Saving
 ======
 
-Get data for a given location ,convert, and save into csv file
+Get data for a given location, convert, and save into csv file:
 
 .. code-block:: python
 
@@ -123,13 +125,13 @@ Get data for a given location ,convert, and save into csv file
     lon = 77.23
     data.to_csv('test.csv', lat, lon, file_dir)
 
-Save data in netCDF format
+Save data in netCDF format:
 
 .. code-block:: python
 
     data.to_netcdf('test.nc', file_dir)
 
-Save data in GeoTIFF format (if you have rioxarray library)
+Save data in GeoTIFF format (if you have rioxarray library):
 
 .. code-block:: python
 
