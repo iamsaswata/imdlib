@@ -3,9 +3,9 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Frequently Asked Questions &mdash; IMDLIB  documentation</title>
   
@@ -17,10 +17,7 @@
 
   
   
-
   
-  
-
   
 
   
@@ -54,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> IMDLIB
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> IMDLIB
           
 
           
@@ -101,10 +98,10 @@
 <p class="caption"><span class="caption-text">Reference</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#why-imdlib">Why IMDLIB?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#can-imdlib-process-any-grd-file">Can imdlib process any GRD file?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#what-is-the-development-status-of-the-imdlib-library">What is the development status of the imdlib library?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#what-others-tools-should-i-know-about">What others tools should I know about?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#why-developing-imdlib">Why developing imdlib?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#can-imdlib-process-any-grd-file">Can imdlib process any GRD file?</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog History</a></li>
@@ -150,8 +147,6 @@
 
 
 
-
-
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -163,7 +158,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-          
+            
             <a href="_sources/faq.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -179,36 +174,27 @@
             
   <div class="section" id="frequently-asked-questions">
 <span id="faq"></span><h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="what-is-the-development-status-of-the-imdlib-library">
-<h2>What is the development status of the imdlib library?<a class="headerlink" href="#what-is-the-development-status-of-the-imdlib-library" title="Permalink to this headline">¶</a></h2>
-<p>As of today (January 2021), IMDLIB is used by several people (number unknown), specifically
-by research scholars across India. We plan to continue and maintain imdlib in the coming
-future with our limited time. Imdlib is small but a useful library that we enjoyed during our
-PhD journey.</p>
-</div>
-<div class="section" id="what-others-tools-should-i-know-about">
-<h2>What others tools should I know about?<a class="headerlink" href="#what-others-tools-should-i-know-about" title="Permalink to this headline">¶</a></h2>
-<p>For handling of gridded data, the netCDF file system is universally adopted. The <a class="reference external" href="http://xarray.pydata.org/en/stable/">xarray</a>
-is an excellent library for handling netCDF data in python. If one need parallel support,
-<a class="reference external" href="https://dask.org/">Dask</a> provides advanced parallelism for analytics. But, both of them use <a class="reference external" href="https://numpy.org/">numpy</a> / <a class="reference external" href="http://pandas.pydata.org/">pandas</a>
-as the core for building their final product. In the cloud-native future, hopefully <a class="reference external" href="https://pangeo-data.github.io/">pangeo</a>
-will emerge as the one of the most powerful tool for data analytics.</p>
-</div>
-<div class="section" id="why-developing-imdlib">
-<h2>Why developing imdlib?<a class="headerlink" href="#why-developing-imdlib" title="Permalink to this headline">¶</a></h2>
-<p>As hydrologist and climate scientist, we had to find and process the various meteorological (Indian)
-variables quite often. Recently, gridded forcing datasets are made publicly available in India. From our past
-experiences we were aware how painful and tedious it is to get and process the binary gridded
-dataset for our area of interest. So, initially it was developed only for our own use. But, from
-encouragement of other fellow friends, we decided to to give it a proper shape and publish as a
-proper package.</p>
+<div class="section" id="why-imdlib">
+<h2>Why IMDLIB?<a class="headerlink" href="#why-imdlib" title="Permalink to this headline">¶</a></h2>
+<p>The contemporary hydroclimatic studies require a huge data handling. Recently, the high-resolution gridded meteorological datasets, i.e., Rainfall (0.25° x 0.25°), Maximum and Minimum Temperature (1° x 1°) at daily timescale are made open-access. This gridded dataset for India was prepared considering measurements from well-spread gauge stations over the Indian land region after expanded quality controls. However, extraction of data for our area of interest often consumes substantial time and effort. IMDLIB resolves this problem by providing an easy and user-friendly way to extract continuous gridded data.</p>
 </div>
 <div class="section" id="can-imdlib-process-any-grd-file">
 <h2>Can imdlib process any GRD file?<a class="headerlink" href="#can-imdlib-process-any-grd-file" title="Permalink to this headline">¶</a></h2>
 <p>No. For hadling any binary dataset, one needs to know the exact dimension (both spatial and
-temporal) of the given data.Imdlib takes this information from <a class="reference external" href="http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html">imdpune</a>. So, if the data
-dimension doesn’t match with the imdlib considered dimension, it won’t be able to read or further
-process the data.</p>
+temporal) of the given data. IMDLIB takes this information from <a class="reference external" href="http://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html">imdpune</a>. So, if the data
+dimension doesn’t match with that of IMDLIB, it won’t be able to read or further
+process them.</p>
+</div>
+<div class="section" id="what-is-the-development-status-of-the-imdlib-library">
+<h2>What is the development status of the imdlib library?<a class="headerlink" href="#what-is-the-development-status-of-the-imdlib-library" title="Permalink to this headline">¶</a></h2>
+<p>As of today (March 2021), IMDLIB is used by a large mass of people, specifically the M.Tech, Ph.D. and postdoctoral scholars across India. We would continue and maintain IMDLIB in the future as well. IMDLIB is a useful library that we enjoyed building during our Ph.D. journey.</p>
+</div>
+<div class="section" id="what-others-tools-should-i-know-about">
+<h2>What others tools should I know about?<a class="headerlink" href="#what-others-tools-should-i-know-about" title="Permalink to this headline">¶</a></h2>
+<p>For handling of gridded data, the netCDF file system is universally adopted. The <a class="reference external" href="http://xarray.pydata.org/en/stable/">xarray</a>
+is an excellent library for handling netCDF data in python. If one needs parallel support,
+<a class="reference external" href="https://dask.org/">Dask</a> provides advanced parallelism for analytics. But, both of them use <a class="reference external" href="https://numpy.org/">numpy</a> / <a class="reference external" href="http://pandas.pydata.org/">pandas</a>
+as the core for building their final product. Hopefully, <a class="reference external" href="https://pangeo-data.github.io/">pangeo</a> will emerge as one of the most powerful tools for data analytics in the cloud-native future.</p>
 </div>
 </div>
 
@@ -217,29 +203,37 @@ process the data.</p>
            
           </div>
           <footer>
+  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="changelog.html" class="btn btn-neutral float-right" title="Changelog History" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="Usage.html" class="btn btn-neutral float-left" title="Downloading" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+      
+        <a href="changelog.html" class="btn btn-neutral float-right" title="Changelog History" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Usage.html" class="btn btn-neutral float-left" title="Downloading" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
     </div>
+  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &#169; Copyright 2021, Saswata Nandi and Pratiman Patel.
+        
+        &copy; Copyright 2021, Saswata Nandi, Pratiman Patel and Sabyasachi Swain
 
     </p>
   </div>
     
     
     
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
+
         </div>
       </div>
 

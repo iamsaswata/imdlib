@@ -1,6 +1,14 @@
 Changelog History
 =================
 
+v0.1.11 (12 March 2021)
+--------------------------
+
+* Updated docs
+
+* Fixed missing libraries for conda upload
+
+
 v0.1.10 (27 Feburary 2021)
 --------------------------
 

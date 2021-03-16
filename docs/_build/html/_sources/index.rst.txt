@@ -5,8 +5,10 @@
 
 IMDLIB - a Python library for IMD gridded data
 ==============================================
-IMDLIB is a python package to download and handle binary grided data from India Meteorological
-Department (IMD). For more information about the IMD datasets is provided by `IMD Pune`_. It heavily employes the `xarray`_ for the processing of the datasets.
+
+IMDLIB is a python package to download and handle binary gridded data from the India Meteorological
+Department (IMD). For more information about the IMD datasets, the link of 
+`IMD Pune`_ may be referred. It heavily employes the `xarray`_ for processing the datasets.
 
 .. _IMD Pune: https://imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
 .. _xarray: http://xarray.pydata.org/en/stable/
@@ -49,8 +51,6 @@ About
 :Status:
     .. image:: https://badge.fury.io/py/imdlib.svg
         :target: https://badge.fury.io/py/imdlib
-    .. image:: https://travis-ci.org/iamsaswata/imdlib.svg?branch=master
-        :target: https://travis-ci.org/iamsaswata/imdlib
     .. image:: https://anaconda.org/iamsaswata/imdlib/badges/version.svg
         :target: https://anaconda.org/iamsaswata/imdlib
     .. image:: https://zenodo.org/badge/235463327.svg
@@ -63,6 +63,7 @@ About
 :Contact:
     * `Saswata Nandi <https://saswatanandi.github.io/>`__
     * `Pratiman Patel <https://pratiman-91.github.io/>`__
+    * `Sabyasachi Swain <https://scholar.google.co.in/citations?user=5l3ePBUAAAAJ/>`__
 
 .. meta::
    :description: IMDLIB is a python package library to download IMD gridded data
