@@ -10,7 +10,7 @@ Installation
 
 IMDLIB is tested for both Windows and Linux platforms with 64-bit architecture.
 
-We recommend using ‘Conda’  to install IMDLIB.
+We recommend ‘Conda’  to install IMDLIB.
 
 .. code-block:: bash
 

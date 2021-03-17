@@ -7,7 +7,6 @@ IMDLIB is capable of downloading gridded rainfall and temperature (minimum and m
 
     import imdlib as imd
 
-    # Downloading 9 years of rainfall data for India
     start_yr = 2010
     end_yr = 2018
     variable = 'rain' # other options are ('tmin'/ 'tmax')
@@ -73,7 +72,7 @@ Output
 Processing
 ==========
 
-Getting the xarray object for further processing.
+Getting the xarray object for further processing:
 
 .. code-block:: python
 
