@@ -177,7 +177,6 @@
 <p>IMDLIB is capable of downloading gridded rainfall and temperature (minimum and maximum) data. Here is an example of downloading rainfall data from 2010 to 2018:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">imdlib</span> <span class="k">as</span> <span class="nn">imd</span>
 
-<span class="c1"># Downloading 9 years of rainfall data for India</span>
 <span class="n">start_yr</span> <span class="o">=</span> <span class="mi">2010</span>
 <span class="n">end_yr</span> <span class="o">=</span> <span class="mi">2018</span>
 <span class="n">variable</span> <span class="o">=</span> <span class="s1">&#39;rain&#39;</span> <span class="c1"># other options are (&#39;tmin&#39;/ &#39;tmax&#39;)</span>
@@ -240,7 +239,7 @@ Download Successful !!!
 </div>
 <div class="section" id="processing">
 <h1>Processing<a class="headerlink" href="#processing" title="Permalink to this headline">¶</a></h1>
-<p>Getting the xarray object for further processing.</p>
+<p>Getting the xarray object for further processing:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_xarray</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
 </pre></div>

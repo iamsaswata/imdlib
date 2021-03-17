@@ -1,5 +1,5 @@
 """
-Developed by Saswata Nandi and Pratiman Patel
+Developed by Saswata Nandi, Pratiman Patel and Sabyasachi Swain 
 """
 
 import array
