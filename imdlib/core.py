@@ -211,7 +211,7 @@ class IMD(object):
                 outname = "{}{}{}{}".format(out_dir, '/', root, ext)
             else:
                 outname = "{}{}".format(root, ext)
-            xr_da_masked[self.cat].rio.to_raster(outname)
+            xr_da_masked[self.cat].rio.write_nodata(xr_da_masked[self.cat].data[0, -1, -1], inplace=True).rio.to_raster(outname)
         except:
             raise Exception("rioxarray is not installed")
 
