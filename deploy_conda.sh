@@ -47,7 +47,10 @@ array=( 3.6 )
 echo "Building conda package ..."
 cd ~
 echo $PWD
-conda skeleton pypi $pkg
+# conda skeleton pypi $pkg
+# KeyError: 'extras_require'
+# https://github.com/conda/conda-build/issues/4354
+conda skeleton pypi $pkg --python-version 3.6
 cd $pkg
 echo $PWD
 cd ~
