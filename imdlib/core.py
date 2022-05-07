@@ -206,6 +206,7 @@ class IMD(object):
             if not ext:
                 ext = '.tif'
             xr_da_masked = self.get_xarray()
+            xr_da_masked.rio.write_crs(xr_da_masked.crs, inplace=True)
             if out_dir is not None:
                 outname = "{}{}{}{}".format(out_dir, '/', root, ext)
             else:
