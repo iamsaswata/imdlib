@@ -146,7 +146,7 @@ class IMD(object):
             xr_da_masked = xr_da.where(xr_da.values != -999.)
         elif self.cat == 'tmin':
             xr_da = xr.Dataset({'tmin': (['time', 'lat', 'lon'], data_xr,
-                                         {'units': 'C', 'long_name': 'Mainimum Temperature'})},
+                                         {'units': 'C', 'long_name': 'Minimum Temperature'})},
                                coords={'lat': self.lat_array,
                                        'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != data_xr[0, 0, 0])
