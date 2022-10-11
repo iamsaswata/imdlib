@@ -1,6 +1,13 @@
 Changelog History
 =================
 
+v0.1.14 (11 October 2022)
+--------------------------
+
+* Updated download url (https://imdpune.gov.in/Clim_Pred_LRF_New >> https://imdpune.gov.in/cmpg/Griddata)
+
+* added module for standard version check (e.g. imdlib.__version__)
+
 v0.1.11 (12 March 2021)
 --------------------------
 
