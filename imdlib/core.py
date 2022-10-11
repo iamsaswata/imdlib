@@ -316,7 +316,12 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
             temp.fromfile(f, os.stat(fname).st_size // temp.itemsize)
 
         data = np.array(list(map(lambda x: x, temp)))
-
+        
+        # Added for new url (dated:Oct 10, 2022)
+        # Removing first element for rain for new url: https://imdpune.gov.in/lrfindex.php 
+        if var_type == 'rain':
+            data = data[1:]
+            
         # Check consistency of data points
         if len(data) != nlen:
             raise Exception("Error in file reading,"
@@ -402,7 +407,8 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
 
     if var_type == 'rain':
         var = 'rain'
-        url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/rainfall.php'
+        # url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/rainfall.php' (old url)
+        url = 'https://imdpune.gov.in/cmpg/Griddata/rainfall.php' # new url (dated:Oct 10, 2022)
         fini = 'Rainfall_ind'
         if fn_format == 'yearwise':
             fend = '.grd'
@@ -410,12 +416,14 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             fend = '_rfp25.grd'
     elif var_type == 'tmax':
         var = 'maxtemp'
-        url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/maxtemp.php'
+        # url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/maxtemp.php' (old url)
+        url = 'https://imdpune.gov.in/cmpg/Griddata/maxtemp.php' # new url (dated:Oct 10, 2022)
         fini = 'Maxtemp_MaxT_'
         fend = '.GRD'
     elif var_type == 'tmin':
         var = 'mintemp'
-        url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/mintemp.php'
+        # url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/mintemp.php' (old url)
+        url ='https://imdpune.gov.in/cmpg/Griddata/mintemp.php' # new url (dated:Oct 10, 2022)
         fini = 'Mintemp_MinT_'
         fend = '.GRD'
     else:
