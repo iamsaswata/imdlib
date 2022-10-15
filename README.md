@@ -38,5 +38,7 @@ imdlib is available under the open source [MIT](https://opensource.org/licenses/
 
 If you are using imdlib and would like to cite it in academic publication, we would certainly appreciate it. We recommend to use the zenodo DOI for this purpose:
 
+Nandi, S., Patel, P., and Swain, S. (2022). IMDLIB: A python library for IMD gridded data. Zenodo. https://doi.org/10.5281/zenodo.7205414
 
-[![DOI](https://zenodo.org/badge/235463327.svg)](https://zenodo.org/badge/latestdoi/235463327)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7205414.svg)](https://doi.org/10.5281/zenodo.7205414)
+
