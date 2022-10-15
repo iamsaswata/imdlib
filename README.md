@@ -26,6 +26,10 @@ or
 [Tutorial](https://saswatanandi.github.io/softwares/imdlib)
 [Tutorial](https://pratiman-91.github.io/blog.html)
 
+## Video Tutorial  
+  
+[![IMDLIB - Albedo Foundation](https://img.youtube.com/vi/uSIPPY5WRaM/0.jpg)](https://www.youtube.com/watch?v=uSIPPY5WRaM)
+
 ## License
 
 imdlib is available under the open source [MIT](https://opensource.org/licenses/MIT).
