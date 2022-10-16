@@ -499,3 +499,133 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
 
     except requests.exceptions.HTTPError as e:
         print("File Download Failed! Error: {}".format(e))
+
+
+def open_data_file_year(var_type, filename, year):
+    """   
+    Function to read binary data and return an IMD class object
+
+    Parameters
+    ----------
+    var_type : str
+        Three possible values.
+        1. "rain" -> input files are for daily rainfall values
+        2. "tmin" -> input files are for daily minimum temperature values
+        3. "tmax" -> input files are for daily maximum tempereature values
+
+    filename : str
+        Path to .GRD / .grd file downloaded from IMD website
+
+    year : int
+        Year
+
+    Returns
+    -------
+    IMD object
+
+    """
+
+    # Parameters about IMD grid from:
+    # http://www.imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
+    #######################################
+    lat_size_rain = 129
+    lon_size_rain = 135
+    lat_rain = np.linspace(6.5, 38.5, lat_size_rain)
+    lon_rain = np.linspace(66.5, 100.0, lon_size_rain)
+
+    lat_size_temp = 31
+    lon_size_temp = 31
+    lat_temp = np.linspace(7.5, 37.5, lat_size_temp)
+    lon_temp = np.linspace(67.5, 97.5, lon_size_temp)
+    #######################################
+    # Format Date into <yyyy-mm-dd>
+
+    # # Handling ending year not given case
+    # if sum([bool(start_yr), bool(end_yr)]) == 1:
+    #     end_yr = start_yr
+
+    start_day = "{}{}{:02d}{}{:02d}".format(year, '-', 1, '-', 1)
+    end_day = "{}{}{:02d}{}{:02d}".format(year, '-', 12, '-', 31)
+
+    # Get total no of days (considering leap years)
+    no_days = total_days(start_day, end_day)
+
+    # Decide which variable we are looking into
+    if var_type == 'rain':
+        lat_size_class = lat_size_rain
+        lon_size_class = lon_size_rain
+    elif var_type == 'tmin' or var_type == 'tmax':
+        lat_size_class = lat_size_temp
+        lon_size_class = lon_size_temp
+    else:
+        raise Exception("Error in variable type declaration."
+                        "It must be 'rain'/'tmin'/'tmax'. ")
+
+    # Loop through all the years
+    # all_data -> container to store data for all the year
+    # all_data.shape = (no_days, len(lon), len(lat))
+    all_data = np.empty((no_days, lon_size_class, lat_size_class))
+    # Counter for total days. It helps filling 'all_data' array.
+    count_day = 0
+
+    # adapting for loop to work with just one year
+    for i in [year]:
+
+        # # Decide resolution of input file name
+        # fname = get_filename(i, var_type, fn_format, file_dir)
+
+        # Check if current year is leap year or not
+        if LeapYear(i):
+            days_in_year = 366
+        else:
+            days_in_year = 365
+
+        # length of total data point for current year
+        nlen = days_in_year * lat_size_class * lon_size_class
+
+        # temporary variable to read binary data
+        temp = array.array("f")
+        with open(filename, 'rb') as f:
+            temp.fromfile(f, os.stat(filename).st_size // temp.itemsize)
+
+        data = np.array(list(map(lambda x: x, temp)))
+        
+        # Added for new url (dated:Oct 10, 2022)
+        # Removing first element for rain for new url: https://imdpune.gov.in/lrfindex.php 
+        if var_type == 'rain':
+            data = data[1:]
+            
+        # Check consistency of data points
+        if len(data) != nlen:
+            raise Exception("Error in file reading,"
+                            "mismatch in size of data-length")
+
+        # Reshape data into a shape of
+        # (days_in_year, lon_size_class, lat_size_class)
+        data = np.transpose(np.reshape(data, (days_in_year, lat_size_class,
+                                              lon_size_class), order='C'), (0, 2, 1))
+        all_data[count_day:count_day + len(data), :, :] = data
+        count_day += len(data)
+        # Stack data vertically to get multi-year data
+        # if i != time_range[0]:
+        #     all_data = np.vstack((all_data, data))
+        # else:
+        #     all_data = data
+
+
+    # Create a IMD object
+    if var_type == 'rain':
+        data = IMD(all_data, 'rain', start_day, end_day, no_days,
+                   lat_rain, lon_rain)
+    elif var_type == 'tmin':
+        data = IMD(all_data, 'tmin', start_day, end_day, no_days,
+                   lat_temp, lon_temp)
+    elif var_type == 'tmax':
+        data = IMD(all_data, 'tmax', start_day, end_day, no_days,
+                   lat_temp, lon_temp)
+    else:
+        raise Exception("Error in variable type declaration."
+                        "It must be 'rain'/'tmin'/'tmax'. ")
+
+    return data
+
