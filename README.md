@@ -32,7 +32,7 @@ or
 
 ## License
 
-imdlib is available under the open source [MIT](https://opensource.org/licenses/MIT).
+imdlib is available under the [MIT](https://opensource.org/licenses/MIT) license.
 
 ## Citation
 
