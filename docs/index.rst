@@ -32,6 +32,7 @@ Department (IMD). For more information about the IMD datasets, the link of
    faq
    changelog
    cf-conventions
+   publication
    api
 
 Citation
