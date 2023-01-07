@@ -136,3 +136,34 @@ def get_filename(year, var_type, fn_format, file_dir):
                         " It must be 'rain'/'temp'/'tmax'.")
 
     return fname
+
+
+def get_filename_realtime(day, var_type, file_dir):
+    """
+    Get filename for reading the real-time file content in future
+    """
+    if var_type == 'rain':
+        if file_dir is not None:
+            fname = file_dir + '/' + 'rain_ind0.25_' + day.strftime("%y_%m_%d") + '.grd'
+        else:
+            fname = 'rain_ind0.25_' + day.strftime("%y_%m_%d") + '.grd'
+
+    elif var_type == 'tmax':
+
+        if file_dir is not None:
+            fname = file_dir + '/' + 'max' + day.strftime("%d%m%Y") + '.grd'
+        else:
+            fname = 'max' + day.strftime("%d%m%Y") + '.grd'
+
+    elif var_type == 'tmin':
+
+        if file_dir is not None:
+            fname = file_dir + '/' + 'min' + day.strftime("%d%m%Y") + '.grd'
+        else:
+            fname = 'min' + day.strftime("%d%m%Y") + '.grd'
+
+    else:
+        raise Exception("Error in variable type declaration."
+                        " It must be 'rain'/'temp'/'tmax'.")
+
+    return fname
