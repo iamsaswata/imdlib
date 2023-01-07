@@ -140,7 +140,7 @@ Save data in GeoTIFF format (if you have rioxarray library):
 Gridded Data Real Time
 ======================
 
-Now IMDLIB can process Gridded (daily) Real Time data (Rainfall at 0.25 & Temperature at 0.5 spatial resolution) 
+Now IMDLIB can process Gridded (daily) Real Time data (Rainfall at 0.25\ :sup:`o`\  & Temperature at 0.5\ :sup:`o`\  spatial resolution) 
 
 Downloading
 -----------
