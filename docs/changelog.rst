@@ -1,6 +1,12 @@
 Changelog History
 =================
 
+
+v0.1.14 (11 October 2022)
+--------------------------
+
+* Added support for real-time daily IMD rainfall (0.25\ :sup:`o`\) and temperature data (0.5\ :sup:`o`\)
+
 v0.1.14 (11 October 2022)
 --------------------------
 
