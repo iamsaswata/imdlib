@@ -319,8 +319,9 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         
         # Added for new url (dated:Oct 10, 2022)
         # Removing first element for rain for new url: https://imdpune.gov.in/lrfindex.php 
-        if var_type == 'rain':
-            data = data[1:]
+        # Removing (commented out) as it was no longer needed to remove the first element anymore. (dated: March 31, 2023)
+        # if var_type == 'rain':
+        #    data = data[1:]
             
         # Check consistency of data points
         if len(data) != nlen:
