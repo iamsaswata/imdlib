@@ -26,7 +26,7 @@ echo "========================"
 echo "Update miniconda"
 conda install -y -c anaconda python=3.6
 conda config --set always_yes true --set changeps1 no
-conda update -q conda
+# conda update -q conda
 conda install -y conda-build
 conda install -y anaconda-client
 echo "========================"
