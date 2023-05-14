@@ -10,6 +10,6 @@ Top-level functions
     
 .. automodapi:: imdlib.util
     :no-inheritance-diagram:
-    
+
 .. automodapi:: imdlib.compute
-    :no-inheritance-diagram:        
+    :no-inheritance-diagram:    
