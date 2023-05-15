@@ -18,8 +18,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'IMDLIB'
-copyright = '2021, Saswata Nandi and Pratiman Patel'
-author = 'Saswata Nandi and Pratiman Patel'
+copyright = '2022, Saswata Nandi, Pratiman Patel and Sabyasachi Swain'
+author = 'Saswata Nandi, Pratiman Patel and Sabyasachi Swain'
 
 
 # -- General configuration ---------------------------------------------------
@@ -28,9 +28,9 @@ author = 'Saswata Nandi and Pratiman Patel'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx_rtd_theme',
-                'sphinx_automodapi.automodapi',
-                'sphinx_automodapi.smart_resolver'
-            ]
+              'sphinx_automodapi.automodapi',
+              'sphinx_automodapi.smart_resolver'
+              ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

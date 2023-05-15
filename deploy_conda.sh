@@ -1,5 +1,45 @@
 #!/bin/bash
+echo "========================"
+echo "========================"
+echo "Showing home directory"
+echo $HOME
+ls
+echo "========================"
 
+echo "========================"
+echo "Downaloading miniconda"
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+ls
+echo "========================"
+
+echo "========================"
+echo "========================"
+echo "Setting up miniconda"
+chmod +x miniconda.sh
+bash miniconda.sh -b -p $HOME/miniconda
+export PATH="$HOME/miniconda/bin:$PATH"
+echo "========================"
+
+
+echo "========================"
+echo "========================"
+echo "Update miniconda"
+conda install -y -c conda-forge python=3.6
+conda config --set always_yes true --set changeps1 no
+# conda update -q conda
+conda install -y conda-build
+conda install -y anaconda-client
+echo "========================"
+
+echo "========================"
+echo "========================"
+echo "install requirements.tt"
+pip install -r requirements.txt
+echo "========================"
+
+
+echo "========================"
+echo "======================"
 # change the package name to the existing PyPi package you would like to build
 pkg='imdlib'
 echo $PWD
@@ -7,25 +47,32 @@ array=( 3.6 )
 echo "Building conda package ..."
 cd ~
 echo $PWD
-conda skeleton pypi $pkg
+# conda skeleton pypi $pkg
+# KeyError: 'extras_require'
+# https://github.com/conda/conda-build/issues/4354
+conda skeleton pypi $pkg --python-version 3.6
 cd $pkg
 echo $PWD
 cd ~
+echo "======================"
 
-# building conda packages
+
 echo "========================"
+echo "======================"
 echo "Building conda packages"
-echo "========================"
+
 echo $PWD
 for i in "${array[@]}"
 do
 	conda-build --python $i $pkg
 done
+echo "========================"
+
 
 
 # convert package to other platforms
 echo "========================="
-echo "Cinverting conda packages"
+echo "Converting conda packages"
 echo "========================="
 cd ~
 echo $PWD
@@ -39,9 +86,11 @@ do
        conda convert --platform $platform $file  -o $HOME/miniconda/conda-bld/
     done    
 done
+echo "========================="
+echo "Converting finished"
+echo "========================="
 
 
-# upload packages to conda
 echo "========================="
 echo "Uploading conda packages"
 echo "========================="

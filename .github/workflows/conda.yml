@@ -1,0 +1,28 @@
+# This workflows will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+name: conda
+
+# Controls when the action will run.   
+on:
+  workflow_dispatch: 
+  # # Triggers the workflow on push or pull request events but only for the master branch  
+  # push:  
+  #   branches: [ master ]  
+  # pull_request:  
+  #   branches: [ master ]  
+
+  # # Allows you to run this workflow manually from the Actions tab  
+  # workflow_dispatch:
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run conda bash script
+      env:
+        ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}        
+      run: bash deploy_conda.sh

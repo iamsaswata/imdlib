@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:copyright: (c) 2020 by Saswata Nandi
+:copyright: (c) 2023 by Saswata Nandi
 :license: MIT, see LICENSE for more details.
 """
 import os
@@ -11,16 +11,18 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 # imdlib version
-VERSION = "0.1.10"
+VERSION = "0.1.16"
+
 
 def readme():
-    """print long description"""
-    with open('README.md') as f:
-        return f.read()
+  """print long description"""
+  with open('README.md') as f:
+    return f.read()
+
 
 setup(
     name="imdlib",
-    version="0.1.10",
+    version="0.1.16",
     author="Saswata Nandi",
     author_email="iamsaswata@yahoo.com",
     description="A tool for handling and downloading IMD gridded data",
@@ -33,13 +35,13 @@ setup(
                  "Programming Language :: Python :: 3",
                  "License :: OSI Approved :: MIT License",
                  "Operating System :: OS Independent",
-                 "Development Status :: 5 - Beta",
+                 "Development Status :: 4 - Beta",
                  "Intended Audience :: Developers",
                  "Intended Audience :: Science/Research",
                  "License :: OSI Approved :: MIT License",
                  "Operating System :: OS Independent",
-                 "Topic :: Scientific/Engineering :: Hydrology",                 
-                ],
+                 "Topic :: Scientific/Engineering :: Hydrology",
+    ],
     python_requires='>=3.0',
 
     keywords='imd, India, rainfall, data, hydrology, IMD, grid, grided, gridded',
@@ -53,5 +55,6 @@ setup(
                       'pytz',
                       'urllib3',
                       'scipy',
-                      'xarray', ]   
+                      'xarray',
+                      'requests', ]
 )

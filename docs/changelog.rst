@@ -1,6 +1,27 @@
 Changelog History
 =================
 
+
+v0.1.15 (06 January 2023)
+--------------------------
+
+* Added support for real-time daily IMD rainfall (0.25\ :sup:`o`\) and temperature data (0.5\ :sup:`o`\)
+
+v0.1.14 (11 October 2022)
+--------------------------
+
+* Updated download url (https://imdpune.gov.in/Clim_Pred_LRF_New >> https://imdpune.gov.in/cmpg/Griddata)
+
+* added module for standard version check (e.g. imdlib.__version__)
+
+v0.1.11 (12 March 2021)
+--------------------------
+
+* Updated docs
+
+* Fixed missing libraries for conda upload
+
+
 v0.1.10 (27 Feburary 2021)
 --------------------------
 
