@@ -552,7 +552,7 @@ def anu_trend(imd_obj):
 
 def dtr_anu(tmx, **kwargs):
     """
-    Function for annual annual mean Diurnal Temperature Range
+    Function for annual mean Diurnal Temperature Range
 
     Parameters
     ----------
@@ -611,7 +611,7 @@ def dtr_anu(tmx, **kwargs):
 
 def mxadt(imd_obj):
     """
-    Function for Max. Annual Daily Tmax (Hottest Day)
+    Function for maximum Annual Daily Tmax (Hottest Day)
 
     Parameters
     ----------
@@ -660,7 +660,7 @@ def mxadt(imd_obj):
 
 def mnadt_anu(imd_obj):
     """
-    Function for Min. Annual Daily Tmin (Coolest night)
+    Function for minimum Annual Daily Tmin (Coolest night)
 
     Parameters
     ----------
@@ -916,7 +916,7 @@ def cwd(imd_obj, threshold=2.5):
 
 def d64(imd_obj, threshold=64.5):
     """
-    Function for finding No. of heavy rainfall days in a year
+    Function for finding number of heavy rainfall days in a year
 
     Parameters
     ----------
