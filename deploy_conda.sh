@@ -24,7 +24,7 @@ echo "========================"
 echo "========================"
 echo "========================"
 echo "Update miniconda"
-conda install -y -c conda-forge python=3.6
+conda install -y -c conda-forge python=3.10
 conda config --set always_yes true --set changeps1 no
 # conda update -q conda
 conda install -y conda-build
@@ -43,7 +43,7 @@ echo "======================"
 # change the package name to the existing PyPi package you would like to build
 pkg='imdlib'
 echo $PWD
-array=( 3.6 )
+array=( 3.10 )
 echo "Building conda package ..."
 cd ~
 echo $PWD
