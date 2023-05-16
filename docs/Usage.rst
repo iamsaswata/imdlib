@@ -213,3 +213,7 @@ If the data is already downloaded. Read the real time gridded data.
     var_type = 'rain'
     file_dir='../data'
     data = imd.open_real_data(var_type, start_dy, end_dy, file_dir)    
+
+
+Climate Indices
+===============  
