@@ -1,0 +1,16 @@
+Index ,Description
+Rainy days (dr) ,Total number of days in a year with rainfall over a threshold  (default: 2.5 mm)
+Consecutive wet days (cwd),The maximum length of wet spell (maximum consecutive days in a year with precipitation ≥ a threshold  (default: 2.5 mm))
+Heavy precipitation days (d64),The number of days in a year with precipitation ≥ a threshold  (default: 64 mm)
+Total precipitation in wet days (rtwd),The sum of precipitation in all the rainy days of a year
+Maximum daily rainfall (rxa),The maximum daily rainfall in a year
+Maximum 5-days rainfall (rx5d),The highest magnitude of rainfall accumulations for consecutive 5 days in a year
+Simple daily intensity index (sdii),It represents the average intensity of a rainy day over a year (computed as the ratio of rtwd and dr)
+Precipitation concentration index (pci),An indicator for temporal precipitation distribution (represents how uniformly annual precipitation is istributed in the months)
+Coolest night (mnadt),Minimum value of temperature over a year (the least daily TMIN value of a year)
+Hottest day (mxadt),Maximum value of temperature over a year (the highest daily TMAX value of a year)
+Diurnal Temperature Range (dtr),"The difference between the maximum and minimum temperature of a year (i.e., the difference between mxadt and mnadt)"
+Modified Mann-Kendall test statistic (mmk_hr),The trend detecting statistic of the non-parametric MMK test advocated by Hamed and Rao (1998)
+Spearman’s Rho statistics (spr),The trend detecting statistic of the non-parametric Spearman’s Rho test
+Sen’s slope estimate (sse),"The trend detecting statistic (i.e., slope) of Sen’s slope"
+Magnitude of trend (sstr),The ratio of product of Sen’s slope (sse) with number of data points to the mean value (expressed in terms of percentage)
