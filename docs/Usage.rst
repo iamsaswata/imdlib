@@ -216,4 +216,16 @@ If the data is already downloaded. Read the real time gridded data.
 
 
 Climate Indices
-===============  
+===============
+
+Available cliimate indices are listed in a Table at the reference section of this  documentation. 
+
+An example of computing heavy precipitation days between year 2015 and 2019 is as follows:
+
+.. code-block:: python
+
+    import imdlib as imd
+    start_yr, end_yr = 2015, 2019
+    variable = 'rain'
+    rain = imd.get_data(variable, start_yr, end_yr,'yearwise', '../data')
+    d64 =  rain.compute('d64', 'A', threshold=64.5)
