@@ -30,6 +30,7 @@ Department (IMD). For more information about the IMD datasets, the link of
    :caption: Reference
    
    faq
+   climate-indices
    changelog
    cf-conventions
    publication
