@@ -428,7 +428,7 @@ class IMD(Compute):
         >>> data = imd.open_data(variable, start_yr, end_yr, 'yearwise')
         >>> tmp = data.copy() 
         """
-        return IMD(self.data, self.cat, self.start_day, self.end_day, self.time_step, self.lat_array, self.lon_array)
+        return IMD(self.data, self.cat, self.start_day, self.end_day, self.no_days, self.lat_array, self.lon_array)
 
 
 
