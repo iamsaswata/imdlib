@@ -87,6 +87,7 @@ class IMD(Compute):
         self.lat_array = lat
         self.lon_array = lon
         self.no_days = no_days
+        self.computed = False
 
     @property
     def shape(self):
@@ -158,7 +159,12 @@ class IMD(Compute):
         # swaping axes (time,lon,lat) > (time, lat,lon)
         # to create xarray object
         data_xr = np.swapaxes(self.data, 1, 2)
-        time = pd.date_range(self.start_day, periods=self.no_days)
+        # To support computed data; Added on 23-07-2023
+        if self.computed:
+            if self.scale  == 'A':
+                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq = 'A')
+        else:
+            time = pd.date_range(self.start_day, periods=self.no_days)
         time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
         if self.cat == 'rain':
             xr_da = xr.Dataset({'rain': (['time', 'lat', 'lon'], data_xr,
