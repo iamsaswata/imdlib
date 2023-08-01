@@ -5,6 +5,8 @@ Publications
 Publications using IMDLIB
 =========================
 
+Chakra, S., Ganguly, A., Oza, H., Padhya, V., Pandey, A., & Deshpande, R. D. (2023). Multidecadal summer monsoon rainfall trend reversals in South Peninsular India: a new approach to examining long-term rainfall dataset. *Journal of Hydrology*. https://doi.org/10.1016/j.jhydrol.2023.129975.
+
 Sardar, P., and Samadder, S. R. (2023).  Long-term ecological vulnerability assessment of indian sundarban region under present and future climatic conditions under CMIP6 model. *Ecological Informatics*. https://doi.org/10.1016/j.ecoinf.2023.102140
 
 Roy, P. K., Ghosh, A., Basak, S. K., Mohinuddin, S., & Roy M. B. (2023).  Analysing the Role of AHP Model to Identify Flood Hazard Zonation in a Coastal Island, India. *Journal of the Indian Society of Remote Sensing Article*, 1-15. https://doi.org/10.1007/s12524-023-01697-x
