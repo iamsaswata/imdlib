@@ -5,6 +5,9 @@ Publications
 Publications using IMDLIB
 =========================
 
+
+Bora, S., & Hazarika, A. (2023, April). Rainfall time series forecasting using ARIMA model. In 2023 ATCON-1, (pp. 1-5). *IEEE*, https://doi.org/10.1109/ICAIA57370.2023.10169493
+
 Panja, A., Garai, S., Zade, S., Veldandi, A., Sahani, S., & Maiti, S. (2023). Climate Data Extraction for Social Science Research: A Step by Step Process. *Social Science Dimensions of Climate Resilient Agriculture*, ISBN: 978-81-964762-1-2.
 
 Chakra, S., Ganguly, A., Oza, H., Padhya, V., Pandey, A., & Deshpande, R. D. (2023). Multidecadal summer monsoon rainfall trend reversals in South Peninsular India: a new approach to examining long-term rainfall dataset. *Journal of Hydrology*. https://doi.org/10.1016/j.jhydrol.2023.129975.
