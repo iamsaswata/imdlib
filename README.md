@@ -45,7 +45,7 @@ Nandi, S., Patel, P., and Swain, S. (2022). IMDLIB: A python library for IMD gri
 ## Publications using IMDLIB  
   
 
-Bora, S., & Hazarika, A. (2023, April). Rainfall time series forecasting using ARIMA model. In 2023 ATCON-1, (pp. 1-5). *IEEE*, [[DOI]](https://doi.org/10.1109/ICAIA57370.2023.10169493)  
+Bora, S., & Hazarika, A. (2023). Rainfall time series forecasting using ARIMA model. In 2023 ATCON-1, (pp. 1-5). *IEEE*, [[DOI]](https://doi.org/10.1109/ICAIA57370.2023.10169493)  
   
 Panja, A., Garai, S., Zade, S., Veldandi, A., Sahani, S., & Maiti, S. (2023). Climate Data Extraction for Social Science Research: A Step by Step Process. *Social Science Dimensions of Climate Resilient Agriculture*, [[ISBN]](https://www.researchgate.net/profile/Sanjit-Maiti/publication/372909405_Social_Science_Dimensions_of_Climate_Resilient_Agriculture/links/64cd3c4191fb036ba6c6d311/Social-Science-Dimensions-of-Climate-Resilient-Agriculture.pdf#page=57) (ISBN: 978-81-964762-1-2)
   
