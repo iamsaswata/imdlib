@@ -45,6 +45,8 @@ Nandi, S., Patel, P., and Swain, S. (2022). IMDLIB: A python library for IMD gri
 ## Publications using IMDLIB  
   
 
+Panja, A., Garai, S., Zade, S., Veldandi, A., Sahani, S., & Maiti, S. (2023). Climate Data Extraction for Social Science Research: A Step by Step Process. *Social Science Dimensions of Climate Resilient Agriculture*, [[ISBN]](https://www.researchgate.net/profile/Sanjit-Maiti/publication/372909405_Social_Science_Dimensions_of_Climate_Resilient_Agriculture/links/64cd3c4191fb036ba6c6d311/Social-Science-Dimensions-of-Climate-Resilient-Agriculture.pdf#page=57) (ISBN: 978-81-964762-1-2)
+  
 Chakra, S., Ganguly, A., Oza, H., Padhya, V., Pandey, A., & Deshpande, R. D. (2023). Multidecadal summer monsoon rainfall trend reversals in South Peninsular India: a new approach to examining long-term rainfall dataset. *Journal of Hydrology*, [[DOI]](https://doi.org/10.1016/j.jhydrol.2023.129975).
   
 Sardar, P., and Samadder, S. R. (2023).  Long-term ecological vulnerability assessment of indian sundarban region under present and future climatic conditions under CMIP6 model. *Ecological Informatics*. [[DOI]](https://doi.org/10.1016/j.ecoinf.2023.102140)  
