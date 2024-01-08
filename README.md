@@ -38,7 +38,7 @@ imdlib is available under the [MIT](https://opensource.org/licenses/MIT) license
 
 If you are using imdlib and would like to cite it in academic publication, we would certainly appreciate it. We recommend to use one of these two DOIs for this purpose:
 
-Nandi, S., Patel, P., and Swain, S. (2024). IMDLIB: An open-source library for retrieval, processing and spatiotemporal exploratory assessments of gridded meteorological observation datasets over India. *Environmental Modelling and Software*, [[DOI]](https://doi.org/10.1016/j.envsoft.2023.105869)  
+Nandi, S., Patel, P., and Swain, S. (2024). IMDLIB: An open-source library for retrieval, processing and spatiotemporal exploratory assessments of gridded meteorological observation datasets over India. *Environmental Modelling and Software*, 71 (105869), [[DOI]](https://doi.org/10.1016/j.envsoft.2023.105869)  
   
 Nandi, S., Patel, P., and Swain, S. (2022). IMDLIB: A python library for IMD gridded data. Zenodo. [[DOI]](https://doi.org/10.5281/zenodo.7205414)   
 
