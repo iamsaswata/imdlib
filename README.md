@@ -44,8 +44,10 @@ Nandi, S., Patel, P., and Swain, S. (2022). IMDLIB: A python library for IMD gri
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7205414.svg)](https://doi.org/10.5281/zenodo.7205414)
 
-## Publications using IMDLIB  
+## Publications using IMDLIB 
   
+Pandey, H.K., Singh, V.K., Singh, R.P. et al. (2023). Soil Loss Estimation Using RUSLE in Hard Rock Terrain: a Case Study of Bundelkhand, India. *Water Conserv Sci Eng 8*, 55 (2023). [[DOI]](https://doi.org/10.1007/s41101-023-00229-5)   
+    
 Garg, N., Negi, S., Nagar, R., Rao, S., & KR, S. (2023). Multivariate multi-step LSTM model for flood runoff prediction: a case study on the Godavari River Basin in India. *Journal of Water and Climate Change*, [[DOI]](https://doi.org/10.2166/wcc.2023.374)   
     
 Bora, S., & Hazarika, A. (2023). Rainfall time series forecasting using ARIMA model. In 2023 ATCON-1, (pp. 1-5). *IEEE*, [[DOI]](https://doi.org/10.1109/ICAIA57370.2023.10169493)  
