@@ -27,6 +27,7 @@ except ImportError:
     has_shapefile = False
 try:
     from shapely.geometry import shape, Point
+    from shapely.ops import unary_union
     has_shapely = True
 except ImportError:
     has_shapely = False
@@ -392,9 +393,12 @@ class IMD(Compute):
         """
         if has_shapefile and has_shapely:
             sf = Reader(shpfile)
-            poly = shape(sf.shapeRecords()[0].shape.__geo_interface__)
 
-            lon_min, lat_min, lon_max, lat_max = poly.bounds
+            shapes = sf.shapes()
+            polygons = [shape(shape_obj.__geo_interface__) for shape_obj in shapes]
+            combined_polygon = unary_union(polygons)
+            
+            lon_min, lat_min, lon_max, lat_max = combined_polygon.bounds
 
             lon_min_indx = np.abs(self.lon_array - lon_min).argmin()
             lon_max_indx = np.abs(self.lon_array - lon_max).argmin()
@@ -417,7 +421,7 @@ class IMD(Compute):
             for i in range(self.data.shape[1]):      # lon loop
                 for j in range(self.data.shape[2]):  # lat loop
                     pt = Point(self.lon_array[i], self.lat_array[j])
-                    if not pt.within(poly):
+                    if not pt.within(combined_polygon):
                         self.data[:, i, j] = np.nan
         else:
             raise Exception("shapefile or shapely library is missing")
