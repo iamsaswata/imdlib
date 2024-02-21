@@ -46,8 +46,10 @@ Nandi, S., Patel, P., and Swain, S. (2022). IMDLIB: A python library for IMD gri
 
 ## Publications using IMDLIB 
   
-Pandey, H.K., Singh, V.K., Singh, R.P. et al. (2023). Soil Loss Estimation Using RUSLE in Hard Rock Terrain: a Case Study of Bundelkhand, India. *Water Conserv Sci Eng 8*, 55 (2023). [[DOI]](https://doi.org/10.1007/s41101-023-00229-5)   
-
+Swain, S., Mishra, P.K., Nandi, S., Pradhan, B., Sahoo, S., Al-Ansari, A. (2024). A simplistic approach for monitoring meteorological drought over arid regions: a case study of Rajasthan, India. *Applied Water Science*, 14, 36. [[DOI]](https://doi.org/10.1007/s13201-023-02085-z)  
+  
+Pandey, H.K., Singh, V.K., Singh, R.P. et al. (2023). Soil Loss Estimation Using RUSLE in Hard Rock Terrain: a Case Study of Bundelkhand, India. *Water Conserv Sci Eng 8*, 55. [[DOI]](https://doi.org/10.1007/s41101-023-00229-5)   
+  
 Vage, S., Gupta, T., Roy, S. (2023). Impact Analysis of Climate Change on Floods in an Indian Region Using Machine Learning. *In: ICANN 2023*, 14261. [[DOI]](https://doi.org/10.1007/978-3-031-44198-1_31)  
       
 Garg, N., Negi, S., Nagar, R., Rao, S., & KR, S. (2023). Multivariate multi-step LSTM model for flood runoff prediction: a case study on the Godavari River Basin in India. *Journal of Water and Climate Change*, [[DOI]](https://doi.org/10.2166/wcc.2023.374)   
