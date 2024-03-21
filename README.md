@@ -46,7 +46,9 @@ Nandi, S., Patel, P., and Swain, S. (2022). IMDLIB: A python library for IMD gri
 
 ## Publications using IMDLIB 
   
-Swain, S., Mishra, P.K., Nandi, S., Pradhan, B., Sahoo, S., Al-Ansari, A. (2024). A simplistic approach for monitoring meteorological drought over arid regions: a case study of Rajasthan, India. *Applied Water Science*, 14, 36. [[DOI]](https://doi.org/10.1007/s13201-023-02085-z)  
+Swain, S., Mishra, P.K., Nandi, S., Pradhan, B., Sahoo, S., Al-Ansari, A. (2024). A simplistic approach for monitoring meteorological drought over arid regions: a case study of Rajasthan, India. *Applied Water Science*, 14, 36. [[DOI]](https://doi.org/10.1007/s13201-023-02085-z)   
+  
+Jaiswal, S., Balietti, A., & Schäffer, D. (2023). Environmental Protection and Labor Market Composition. *University of Heidelberg, Department of Economics* [[DOI]](https://doi.org/10.11588/heidok.00033831)  
   
 Pandey, H.K., Singh, V.K., Singh, R.P. et al. (2023). Soil Loss Estimation Using RUSLE in Hard Rock Terrain: a Case Study of Bundelkhand, India. *Water Conserv Sci Eng 8*, 55. [[DOI]](https://doi.org/10.1007/s41101-023-00229-5)   
   
