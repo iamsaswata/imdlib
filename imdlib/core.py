@@ -9,8 +9,10 @@ import os
 import sys
 import requests
 import xarray as xr
+from dataclasses import dataclass
+from pathlib import Path
 from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename
-from datetime import datetime
+from datetime import datetime, date
 # Added 14-05-2023 #
 from scipy.interpolate import griddata 
 from imdlib.compute import Compute
@@ -495,6 +497,11 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     #######################################
     # Format Date into <yyyy-mm-dd>
 
+    if start_yr is None:
+        raise Exception(
+            "Starting year must be provided when requesting rain, tmin or tmax data."
+        )
+
     # Handling ending year not given case
     if sum([bool(start_yr), bool(end_yr)]) == 1:
         end_yr = start_yr
@@ -506,6 +513,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     no_days = total_days(start_day, end_day)
 
     # Decide which variable we are looking into
+
     if var_type == 'rain':
         lat_size_class = lat_size_rain
         lon_size_class = lon_size_rain
@@ -724,7 +732,360 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     return data
 
 
-def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub_dir=False, proxies=None):
+@dataclass
+class IMDData:
+    """Container for IMD gridded datasets represented as :class:`xarray.Dataset`."""
+
+    dataset: xr.Dataset
+    variable: str
+    start_date: pd.Timestamp
+    end_date: pd.Timestamp
+
+    def to_xarray(self):
+        """Return the underlying :class:`xarray.Dataset`."""
+
+        return self.dataset
+
+    def __getattr__(self, item):
+        """Proxy attribute access to the wrapped dataset."""
+
+        try:
+            return getattr(self.dataset, item)
+        except AttributeError as exc:  # pragma: no cover - defensive programming
+            raise AttributeError(item) from exc
+
+
+def _normalise_timestamp(value, parameter_name):
+    """Convert different date representations to :class:`pandas.Timestamp`."""
+
+    if value is None:
+        raise ValueError(f"{parameter_name} must be provided")
+
+    if isinstance(value, pd.Timestamp):
+        ts = value
+    elif isinstance(value, (datetime, date)):
+        ts = pd.Timestamp(value)
+    elif isinstance(value, (tuple, list)) and len(value) == 3:
+        ts = pd.Timestamp(year=int(value[0]), month=int(value[1]), day=int(value[2]))
+    else:
+        try:
+            ts = pd.Timestamp(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Unable to interpret {parameter_name}: {value!r}"
+            ) from exc
+
+    return ts.normalize()
+
+
+def _resolve_gpm_frequency(fn_format=None, frequency=None):
+    """Return the canonical (format, frequency) tuple for GPM downloads."""
+
+    fmt = fn_format.lower() if isinstance(fn_format, str) else None
+    freq = frequency.lower() if isinstance(frequency, str) else None
+
+    valid_formats = {None, "grd", "nc"}
+    valid_frequencies = {None, "realtime", "monthly"}
+
+    if fmt not in valid_formats:
+        raise ValueError("fn_format must be either 'grd' or 'nc' for rain_gpm data")
+    if freq not in valid_frequencies:
+        raise ValueError("frequency must be 'realtime' or 'monthly' for rain_gpm data")
+
+    if fmt is None and freq is None:
+        fmt, freq = "grd", "realtime"
+    elif fmt is None:
+        fmt = "nc" if freq == "monthly" else "grd"
+    elif freq is None:
+        freq = "monthly" if fmt == "nc" else "realtime"
+
+    if fmt == "nc" and freq != "monthly":
+        raise ValueError("Monthly rain_gpm data must be requested with frequency='monthly'.")
+    if fmt == "grd" and freq != "realtime":
+        raise ValueError("Real-time rain_gpm data must use fn_format='grd'.")
+
+    return fmt, freq
+
+
+def _download_file(url, destination, proxies=None, chunk_size=2 ** 14):
+    """Download a file unless it is already present on disk."""
+
+    if Path(destination).exists():
+        return
+
+    response = requests.get(url, stream=True, proxies=proxies)
+    response.raise_for_status()
+
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    with destination.open("wb") as file_handle:
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            if chunk:
+                file_handle.write(chunk)
+
+
+def _resolve_grid_shape(values_count, grid_shape=None):
+    """Determine the grid shape for binary GPM rainfall files."""
+
+    if grid_shape is not None:
+        nlat, nlon = int(grid_shape[0]), int(grid_shape[1])
+        expected = nlat * nlon
+        if values_count in (0, expected, expected + 1):
+            return nlat, nlon
+        raise ValueError(
+            "Binary rainfall file does not match the provided grid shape "
+            f"({nlat}x{nlon})."
+        )
+
+    default_shape = (129, 135)
+    expected = default_shape[0] * default_shape[1]
+    if values_count in (0, expected, expected + 1):
+        return default_shape
+
+    raise ValueError(
+        "Binary rainfall file does not match the expected grid size "
+        f"({default_shape[0]}x{default_shape[1]})."
+    )
+
+
+def _build_coordinate(bounds, size):
+    """Create a coordinate array spanning ``bounds`` with ``size`` points."""
+
+    start, end = bounds
+    if size == 1:
+        return np.array([float(start)], dtype="float32")
+    return np.linspace(float(start), float(end), int(size), dtype="float32")
+
+
+def _infer_nc_variable(dataset):
+    """Infer the rainfall variable name from a NetCDF dataset."""
+
+    preferred_names = {"rain", "rainfall", "precip", "precipitation"}
+    candidate = None
+
+    for name, data_array in dataset.data_vars.items():
+        dims_lower = {dim.lower() for dim in data_array.dims}
+        if {"lat", "lon"}.issubset(dims_lower) or {
+            "latitude",
+            "longitude",
+        }.issubset(dims_lower):
+            if name.lower() in preferred_names:
+                return name
+            candidate = candidate or name
+
+    if candidate:
+        return candidate
+
+    if dataset.data_vars:
+        return next(iter(dataset.data_vars))
+
+    raise ValueError("Unable to determine rainfall variable in NetCDF dataset")
+
+
+def _load_gpm_grd(files, times, grid_shape=None, lat_bounds=None, lon_bounds=None):
+    """Load daily binary rainfall files into an :class:`xarray.Dataset`."""
+
+    if not files:
+        raise ValueError("No files were provided for loading")
+
+    lat_bounds = lat_bounds or (6.5, 38.5)
+    lon_bounds = lon_bounds or (66.5, 100.0)
+
+    data_arrays = []
+    nlat = nlon = None
+
+    for path in files:
+        path = Path(path)
+        raw = np.fromfile(path, dtype="<f4")
+
+        if nlat is None or nlon is None:
+            nlat, nlon = _resolve_grid_shape(raw.size, grid_shape)
+            latitudes = _build_coordinate(lat_bounds, nlat)
+            longitudes = _build_coordinate(lon_bounds, nlon)
+
+        # Remove optional header value if present
+        if raw.size == nlat * nlon + 1:
+            raw = raw[1:]
+
+        if raw.size != nlat * nlon:
+            raise ValueError(
+                f"File {path} does not match expected grid size {nlat}x{nlon}"
+            )
+
+        reshaped = raw.reshape((nlat, nlon))
+        reshaped = np.where(reshaped < -998.0, np.nan, reshaped)
+        data_arrays.append(reshaped.astype("float32"))
+
+    stacked = np.stack(data_arrays, axis=0)
+    dataset = xr.Dataset(
+        {"rain_gpm": (("time", "lat", "lon"), stacked)},
+        coords={
+            "time": pd.DatetimeIndex(times),
+            "lat": latitudes,
+            "lon": longitudes,
+        },
+    )
+
+    dataset = dataset.sortby("time")
+    dataset["rain_gpm"].attrs.update(
+        {"units": "mm/day", "long_name": "IMD GPM + Gauge merged rainfall"}
+    )
+    dataset.attrs.update(
+        {
+            "source": "India Meteorological Department",
+            "frequency": "realtime",
+        }
+    )
+
+    return dataset
+
+
+def _load_gpm_nc(files, times):
+    """Load monthly NetCDF rainfall files into an :class:`xarray.Dataset`."""
+
+    datasets = []
+
+    for path, timestamp in zip(files, times):
+        path = Path(path)
+        with xr.open_dataset(path) as opened:
+            variable_name = _infer_nc_variable(opened)
+            data_array = opened[variable_name].load()
+
+        rename_map = {}
+        for name in list(data_array.dims) + list(data_array.coords):
+            lower = name.lower()
+            if lower in {"latitude", "lat", "y"}:
+                rename_map[name] = "lat"
+            elif lower in {"longitude", "lon", "x"}:
+                rename_map[name] = "lon"
+            elif lower == "time":
+                rename_map[name] = "time"
+
+        if rename_map:
+            data_array = data_array.rename(rename_map)
+
+        if "lat" not in data_array.dims or "lon" not in data_array.dims:
+            raise ValueError(
+                f"Unable to identify latitude/longitude dimensions in {path}"
+            )
+
+        if "time" in data_array.dims:
+            if data_array.sizes.get("time", 1) != 1:
+                raise ValueError(
+                    f"Expected a single time step in monthly file {path}"
+                )
+            data_array = data_array.isel(time=0)
+
+        data_array = data_array.expand_dims(time=[pd.Timestamp(timestamp)])
+        data_array = data_array.astype("float32")
+        dataset = data_array.to_dataset(name="rain_gpm")
+
+        dataset["rain_gpm"].attrs.update(
+            {
+                "units": "mm",
+                "long_name": "IMD GPM + Gauge merged rainfall",
+            }
+        )
+        dataset.attrs.update(
+            {
+                "source": "India Meteorological Department",
+                "frequency": "monthly",
+            }
+        )
+
+        datasets.append(dataset)
+
+    if not datasets:
+        raise ValueError("No NetCDF files were provided for loading")
+
+    combined = xr.concat(datasets, dim="time").sortby("time")
+    return combined
+
+
+def _get_gpm_data(
+    start_date,
+    end_date,
+    fn_format=None,
+    download_dir="./data",
+    frequency=None,
+    proxies=None,
+    grid_shape=None,
+    lat_bounds=None,
+    lon_bounds=None,
+):
+    """Download and open IMD GPM + gauge merged rainfall data."""
+
+    start_ts = _normalise_timestamp(start_date, "start_date")
+    end_ts = _normalise_timestamp(end_date, "end_date")
+
+    if start_ts > end_ts:
+        raise ValueError("start_date must be before or equal to end_date")
+
+    fmt, freq = _resolve_gpm_frequency(fn_format, frequency)
+
+    download_path = Path(download_dir).expanduser()
+    download_path.mkdir(parents=True, exist_ok=True)
+
+    files = []
+    times = []
+    urls = []
+
+    if freq == "realtime":
+        base_url = "https://www.imdpune.gov.in/cmpg/Realtimedata/gpm"
+        for timestamp in pd.date_range(start_ts, end_ts, freq="D"):
+            fname = f"{timestamp.day:02d}{timestamp.month:02d}{timestamp.year:04d}.{fmt}"
+            local_path = download_path / fname
+            files.append(local_path)
+            times.append(timestamp)
+            urls.append((f"{base_url}/{fname}", local_path))
+
+        loader = lambda: _load_gpm_grd(
+            files,
+            times,
+            grid_shape=grid_shape,
+            lat_bounds=lat_bounds,
+            lon_bounds=lon_bounds,
+        )
+
+    else:
+        base_url = "https://www.imdpune.gov.in/cmpg/Griddata/Rainfall25Merged"
+        start_period = start_ts.to_period("M")
+        end_period = end_ts.to_period("M")
+
+        for period in pd.period_range(start_period, end_period, freq="M"):
+            fname = f"Rainfall25Merged_{period.year:04d}{period.month:02d}.{fmt}"
+            local_path = download_path / fname
+            files.append(local_path)
+            times.append(period.to_timestamp())
+            urls.append((f"{base_url}/{fname}", local_path))
+
+        loader = lambda: _load_gpm_nc(files, times)
+
+    for url, path in urls:
+        _download_file(url, path, proxies=proxies)
+
+    dataset = loader()
+    time_index = pd.DatetimeIndex(dataset["time"].values)
+
+    return IMDData(
+        dataset=dataset,
+        variable="rain_gpm",
+        start_date=time_index.min(),
+        end_date=time_index.max(),
+    )
+
+
+def get_data(
+    var_type=None,
+    start_yr=None,
+    end_yr=None,
+    fn_format=None,
+    file_dir=None,
+    sub_dir=False,
+    proxies=None,
+    **kwargs,
+):
     """
     Function to download binary data and return an IMD class object
     time range is tuple or list or numpy array of 2 int number
@@ -735,16 +1096,20 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
     Parameters
     ----------
     var_type : str
-        Three possible values.
+        Four possible values.
         1. "rain" -> input files are for daily rainfall values
         2. "tmin" -> input files are for daily minimum temperature values
         3. "tmax" -> input files are for daily maximum tempereature values
+        4. "rain_gpm" -> IMD + GPM gauge merged rainfall (daily or monthly)
 
-    start_yr : int
-        Starting year for downloading data
+    start_yr : int or tuple, optional
+        Starting year for downloading data. When ``var_type`` is ``'rain_gpm'`` this
+        can also be provided as a date tuple (``YYYY, MM, DD``) or string if
+        ``start_date`` is not supplied via keyword argument.
 
-    end_yr : int
-        Ending year for downloading data
+    end_yr : int or tuple, optional
+        Ending year for downloading data. When ``var_type`` is ``'rain_gpm'`` this can
+        also be expressed as a date tuple or string if ``end_date`` is omitted.
 
     fn_format   : str or None
         fn_format represent filename format. Default vales is None.
@@ -769,9 +1134,36 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
 
     Returns
     -------
-    IMD object
+    IMD object or :class:`IMDData`
 
     """
+
+    var_type = kwargs.get('var', var_type)
+
+    if var_type == 'rain_gpm':
+        start_date = kwargs.pop('start_date', start_yr)
+        if end_yr is not None:
+            default_end = end_yr
+        else:
+            default_end = start_date
+        end_date = kwargs.pop('end_date', default_end)
+        download_dir = kwargs.pop('download_dir', file_dir if file_dir is not None else './data')
+        frequency = kwargs.pop('frequency', None)
+        grid_shape = kwargs.pop('grid_shape', None)
+        lat_bounds = kwargs.pop('lat_bounds', None)
+        lon_bounds = kwargs.pop('lon_bounds', None)
+
+        return _get_gpm_data(
+            start_date=start_date,
+            end_date=end_date,
+            fn_format=fn_format,
+            download_dir=download_dir,
+            frequency=frequency,
+            proxies=proxies,
+            grid_shape=grid_shape,
+            lat_bounds=lat_bounds,
+            lon_bounds=lon_bounds,
+        )
 
     if var_type == 'rain':
         var = 'rain'
