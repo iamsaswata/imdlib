@@ -10,19 +10,20 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
 
     """
 
-    Function to read real-time binary data and return an IMD class object  
-      
-    Binary Rainfall @0.25 spatial resolution  
-      
-    Bineary Temperature @0.25 spatial resolution  
+    Function to read real-time binary data and return an IMD class object
+
+    Binary Rainfall @0.25 spatial resolution
+
+    Binary Temperature @0.50 spatial resolution
 
     Parameters
     ----------
     var_type : str
-        Three possible values.
+        Four possible values.
         1. "rain" -> input files are for daily rainfall values
-        2. "tmin" -> input files are for daily minimum temperature values
-        3. "tmax" -> input files are for daily maximum tempereature values
+        2. "rain_gpm" -> input files are for daily GPM rainfall values
+        3. "tmin" -> input files are for daily minimum temperature values
+        4. "tmax" -> input files are for daily maximum tempereature values
 
     start_dy : str
         Starting day for opening data in format YYYY-MM-DD (e.g., '2020-01-31')
@@ -49,6 +50,11 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
     lon_size_temp = 61
     lat_temp = np.linspace(7.5, 37.5, lat_size_temp)
     lon_temp = np.linspace(67.5, 97.5, lon_size_temp)
+
+    lat_size_gpm = 281
+    lon_size_gpm = 241
+    lat_gpm = np.linspace(-30.0, 40.0, lat_size_gpm)
+    lon_gpm = np.linspace(50.0, 110.0, lon_size_gpm)
     #######################################
     # Format Date into <yyyy-mm-dd>
 
@@ -66,9 +72,12 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
     elif var_type == 'tmin' or var_type == 'tmax':
         lat_size_class = lat_size_temp
         lon_size_class = lon_size_temp
+    elif var_type == 'rain_gpm':
+        lat_size_class = lat_size_gpm
+        lon_size_class = lon_size_gpm
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'rain_gpm'/'tmin'/'tmax'. ")
 
     # Loop through all the years
     # all_data -> container to store data for all the year
@@ -117,6 +126,9 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
     if var_type == 'rain':
         data = IMD(all_data, 'rain', start_dy, end_dy, len(days),
                    lat_rain, lon_rain)
+    elif var_type == 'rain_gpm':
+        data = IMD(all_data, 'rain_gpm', start_dy, end_dy, len(days),
+                   lat_gpm, lon_gpm)
     elif var_type == 'tmin':
         data = IMD(all_data, 'tmin', start_dy, end_dy, len(days),
                    lat_temp, lon_temp)
@@ -125,26 +137,27 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
                    lat_temp, lon_temp)
     else:
         raise Exception("Error in variable type declaration.\n"
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'rain_gpm'/'tmin'/'tmax'. ")
 
     return data
 
 
 def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
     """
-    Function to download real-time IMD data at daily timescale   
-    
-    Binary Rainfall @0.25 spatial resolution  
-    
-    Bineary Temperature @0.25 spatial resolution 
-    
+    Function to download real-time IMD data at daily timescale
+
+    Binary Rainfall @0.25 spatial resolution
+
+    Binary Temperature @0.50 spatial resolution
+
     Parameters
     ----------
     var_type : str
-        Three possible values.
+        Four possible values.
         1. "rain" -> input files are for daily rainfall values
-        2. "tmin" -> input files are for daily minimum temperature values
-        3. "tmax" -> input files are for daily maximum tempereature values
+        2. "rain_gpm" -> input files are for daily GPM rainfall values
+        3. "tmin" -> input files are for daily minimum temperature values
+        4. "tmax" -> input files are for daily maximum tempereature values
 
     start_dy : str
         Starting day for opening data in format YYYY-MM-DD (e.g., '2020-01-31')
@@ -171,6 +184,10 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
         var = 'rain'
         url = 'https://imdpune.gov.in/cmpg/Realtimedata/Rainfall/rain.php' # new url (dated:Oct 10, 2022)
         fini = 'rain_ind0.25_'
+    elif var_type == 'rain_gpm':
+        var = 'rain'
+        url = 'https://www.imdpune.gov.in/cmpg/Realtimedata/gpm/rain.php'
+        fini = ''
     elif var_type == 'tmax':
         var = 'max'
         url = 'https://imdpune.gov.in/cmpg/Realtimedata/max/max.php' # new url (dated:Oct 10, 2022)
@@ -181,7 +198,7 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
         fini = 'min'
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'rain_gpm'/'tmin'/'tmax'. ")
 
     # Handling ending date not given case
     if sum([bool(start_dy), bool(end_dy)]) == 1:
@@ -210,6 +227,8 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
             
             if var_type == 'rain':
                 f_mid = day.strftime("%y_%m_%d")
+            elif var_type == 'rain_gpm':
+                f_mid = day.strftime("%d%m%Y")
             else:
                 f_mid = day.strftime("%d%m%Y")
                 
