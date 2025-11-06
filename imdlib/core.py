@@ -126,12 +126,15 @@ class IMD(Compute):
             if self.cat == 'rain':
                 lat_index, lon_index = get_lat_lon(lat, lon,
                                                    self.lat_array, self.lon_array)
+            elif self.cat == 'rain_gpm':
+                lat_index, lon_index = get_lat_lon(lat, lon,
+                                                   self.lat_array, self.lon_array)
             elif self.cat == 'tmin' or self.cat == 'tmax':
                 lat_index, lon_index = get_lat_lon(lat, lon, self.lat_array,
                                                    self.lon_array)
             else:
                 raise Exception("Error in variable type declaration."
-                                "It must be 'rain'/'tmin'/'tmax'. ")
+                                "It must be 'rain'/'rain_gpm'/'tmin'/'tmax'. ")
 
             if out_dir is not None:
                 outname = "{}{}{}{}{:.2f}{}{:.2f}{}".format(out_dir, '/',
@@ -170,6 +173,12 @@ class IMD(Compute):
         if self.cat == 'rain':
             xr_da = xr.Dataset({'rain': (['time', 'lat', 'lon'], data_xr,
                                          {'units': 'mm/day', 'long_name': 'Rainfall'})},
+                               coords={'lat': self.lat_array,
+                                       'lon': self.lon_array, 'time': time})
+            xr_da_masked = xr_da.where(xr_da.values != -999.)
+        elif self.cat == 'rain_gpm':
+            xr_da = xr.Dataset({'rain_gpm': (['time', 'lat', 'lon'], data_xr,
+                                         {'units': 'mm/day', 'long_name': 'GPM Merged Rainfall'})},
                                coords={'lat': self.lat_array,
                                        'lon': self.lon_array, 'time': time})
             xr_da_masked = xr_da.where(xr_da.values != -999.)
@@ -514,7 +523,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         lon_size_class = lon_size_temp
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
     # Loop through all the years
     # all_data -> container to store data for all the year
@@ -578,7 +587,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
                    lat_temp, lon_temp)
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
     return data            
 
@@ -655,7 +664,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         lon_size_class = lon_size_temp
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
     # Loop through all the years
     # all_data -> container to store data for all the year
@@ -719,7 +728,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
                    lat_temp, lon_temp)
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
     return data
 
@@ -796,7 +805,7 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
         fend = '.GRD'
     else:
         raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. ")
+                        "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
     # Handling ending year not given case
     if sum([bool(start_yr), bool(end_yr)]) == 1:
