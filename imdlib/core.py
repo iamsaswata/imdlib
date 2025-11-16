@@ -6,7 +6,6 @@ import array
 import numpy as np
 import pandas as pd
 import os
-import sys
 import requests
 import xarray as xr
 from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename
@@ -109,7 +108,7 @@ class IMD(Compute):
                 raise Exception("Error in given lat coordinates."
                                 "Given lat value is not in the IMD data range!! ")
             if lon > max(self.lon_array) and lon < min(self.lon_array):
-                raise Exception("Error in in given lon coordinates."
+                raise Exception("Error in given lon coordinates."
                                 "Given lon value is not in the IMD data range!! ")
 
         if lat is None and lon is None:
@@ -200,7 +199,7 @@ class IMD(Compute):
         xr_da_masked.time.attrs['long_name'] = 'time'
 
         xr_da_masked.lon.attrs['axis'] = 'X'  # Optional
-        xr_da_masked.lon.attrs['long_name'] = 'longitude'
+        xr_da_masked.lon.attrs['standard_name'] = 'longitude'
         xr_da_masked.lon.attrs['long_name'] = 'longitude'
         xr_da_masked.lon.attrs['units'] = 'degrees_east'
 
