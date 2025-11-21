@@ -50,7 +50,6 @@ setup(
                       'numpy',
                       'pandas',
                       'six',
-                      'pandas',
                       'python-dateutil',
                       'pytz',
                       'urllib3',
