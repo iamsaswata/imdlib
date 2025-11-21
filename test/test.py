@@ -5,8 +5,8 @@ import os
 def test_read():
     cwd = os.path.dirname(os.path.abspath(__file__))
     #/home/travis/build/iamsaswata/imdlib
-    a = imd.open_data((2018, 2018), 'rain','yearwise', cwd)
-    assert a.data.shape == (365,135,129)
+    a = imd.open_data('rain', 2018, 2018, 'yearwise', cwd)
+    assert a.data.shape == (365, 135, 129)
 
 
 #a.shape
