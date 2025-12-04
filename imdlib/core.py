@@ -320,7 +320,6 @@ class IMD(Compute):
                     if id_y[i] == 0:
                         self.data[:, id_x[i], id_y[i]] = np.nan
                         continue
-                        continue
                 for j in range(self.data.shape[0]):
                     window = 0
                     while np.isnan(self.data[j, id_x[i], id_y[i]]):
