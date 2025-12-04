@@ -60,9 +60,9 @@ echo "Building conda packages"
 echo $PWD
 for i in "${array[@]}"
 do
-    # CHANGE 1: Added --pkg-format 2
-    # This forces the output to be .tar.bz2, which is required for 'conda convert' to work
-    conda-build --python $i $pkg --pkg-format 2
+    # CHANGE 1: Use --package-format 1 to force .tar.bz2 output
+    # This ensures compatibility with 'conda convert'
+    conda-build --python $i $pkg --package-format 1
 done
 echo "========================"
 
@@ -76,7 +76,7 @@ cd ~
 echo $PWD
 platforms=( linux-64 win-64 )
 
-# CHANGE 2: Look for *.tar.bz2 (since we forced the build format above)
+# CHANGE 2: Look for *.tar.bz2 (guaranteed by --package-format 1)
 find $HOME/miniconda/conda-bld/linux-64/ -name "*.tar.bz2" | while read file
 do
     echo "Found file to convert: $file"
