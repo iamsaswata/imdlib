@@ -26,14 +26,13 @@ echo "========================"
 echo "Update miniconda"
 conda install -y -c conda-forge python=3.10
 conda config --set always_yes true --set changeps1 no
-# conda update -q conda
 conda install -y conda-build
 conda install -y anaconda-client
 echo "========================"
 
 echo "========================"
 echo "========================"
-echo "install requirements.tt"
+echo "install requirements.txt"
 pip install -r requirements.txt
 echo "========================"
 
@@ -47,9 +46,6 @@ array=( 3.10 )
 echo "Building conda package ..."
 cd ~
 echo $PWD
-# conda skeleton pypi $pkg
-# KeyError: 'extras_require'
-# https://github.com/conda/conda-build/issues/4354
 conda skeleton pypi $pkg --python-version 3.6
 cd $pkg
 echo $PWD
@@ -64,7 +60,7 @@ echo "Building conda packages"
 echo $PWD
 for i in "${array[@]}"
 do
-	conda-build --python $i $pkg
+    conda-build --python $i $pkg
 done
 echo "========================"
 
@@ -77,13 +73,14 @@ echo "========================="
 cd ~
 echo $PWD
 platforms=( linux-64 win-64 )
-find $HOME/miniconda/conda-bld/linux-64/ -name *.tar.bz2 | while read file
+
+# CHANGE 1: Look for *.conda files, because that is what your build produced
+find $HOME/miniconda/conda-bld/linux-64/ -name "*.conda" | while read file
 do
-    echo $file
-    #conda convert --platform all $file  -o $HOME/conda-bld/
+    echo "Converting $file"
     for platform in "${platforms[@]}"
     do
-       conda convert --platform $platform $file  -o $HOME/miniconda/conda-bld/
+       conda convert --platform $platform $file -o $HOME/miniconda/conda-bld/
     done    
 done
 echo "========================="
@@ -94,11 +91,14 @@ echo "========================="
 echo "========================="
 echo "Uploading conda packages"
 echo "========================="
-find $HOME/miniconda/conda-bld/ -name *.tar.bz2 | while read file
+
+# CHANGE 2: Look for BOTH *.conda (original build) AND *.tar.bz2 (converted builds)
+find $HOME/miniconda/conda-bld/ -type f \( -name "*.conda" -o -name "*.tar.bz2" \) | while read file
 do
-    echo $file
-    anaconda -t $ANACONDA_TOKEN upload $file
+    echo "Uploading $file"
+    anaconda -t $ANACONDA_TOKEN upload $file --user iamsaswata --skip-existing
 done
+
 echo "Building conda package done!"
 echo "==================================="
 echo "Succeessful submission to anaconda"
