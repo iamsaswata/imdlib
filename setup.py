@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:copyright: (c) 2023 by Saswata Nandi
+:copyright: (c) 2026 by Saswata Nandi
 :license: MIT, see LICENSE for more details.
 """
 import os
@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 # imdlib version
-VERSION = "0.1.20"
+VERSION = "0.1.21"
 
 
 def readme():
@@ -22,7 +22,7 @@ def readme():
 
 setup(
     name="imdlib",
-    version="0.1.20",
+    version="0.1.21",
     author="Saswata Nandi",
     author_email="iamsaswata@yahoo.com",
     description="A tool for handling and downloading IMD gridded data",
