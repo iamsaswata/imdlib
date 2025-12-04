@@ -74,7 +74,7 @@ echo "Converting conda packages"
 echo "========================="
 cd ~
 echo $PWD
-platforms=( win-64 )
+platforms=( linux-64 win-64 )
 
 # CHANGE 2: Look for *.tar.bz2 (since we forced the build format above)
 find $HOME/miniconda/conda-bld/linux-64/ -name "*.tar.bz2" | while read file
