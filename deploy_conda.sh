@@ -60,7 +60,9 @@ echo "Building conda packages"
 echo $PWD
 for i in "${array[@]}"
 do
-    conda-build --python $i $pkg
+    # CHANGE 1: Added --pkg-format 2
+    # This forces the output to be .tar.bz2, which is required for 'conda convert' to work
+    conda-build --python $i $pkg --pkg-format 2
 done
 echo "========================"
 
@@ -72,12 +74,12 @@ echo "Converting conda packages"
 echo "========================="
 cd ~
 echo $PWD
-platforms=( linux-64 win-64 )
+platforms=( win-64 )
 
-# CHANGE 1: Look for *.conda files, because that is what your build produced
-find $HOME/miniconda/conda-bld/linux-64/ -name "*.conda" | while read file
+# CHANGE 2: Look for *.tar.bz2 (since we forced the build format above)
+find $HOME/miniconda/conda-bld/linux-64/ -name "*.tar.bz2" | while read file
 do
-    echo "Converting $file"
+    echo "Found file to convert: $file"
     for platform in "${platforms[@]}"
     do
        conda convert --platform $platform $file -o $HOME/miniconda/conda-bld/
@@ -92,8 +94,8 @@ echo "========================="
 echo "Uploading conda packages"
 echo "========================="
 
-# CHANGE 2: Look for BOTH *.conda (original build) AND *.tar.bz2 (converted builds)
-find $HOME/miniconda/conda-bld/ -type f \( -name "*.conda" -o -name "*.tar.bz2" \) | while read file
+# CHANGE 3: Upload all .tar.bz2 files (This includes the original Linux build and the converted Windows build)
+find $HOME/miniconda/conda-bld/ -name "*.tar.bz2" | while read file
 do
     echo "Uploading $file"
     anaconda -t $ANACONDA_TOKEN upload $file --user iamsaswata --skip-existing
