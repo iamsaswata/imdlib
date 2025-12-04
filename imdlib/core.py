@@ -104,11 +104,11 @@ class IMD(Compute):
 
         # check lat and lon are in the feasible range
         if lat is not None and lon is not None:
-            if lat > max(self.lat_array) and lat < min(self.lat_array):
+            if lat > max(self.lat_array) or lat < min(self.lat_array):
                 raise Exception("Error in given lat coordinates."
                                 "Given lat value is not in the IMD data range!! ")
-            if lon > max(self.lon_array) and lon < min(self.lon_array):
-                raise Exception("Error in given lon coordinates."
+            if lon > max(self.lon_array) or lon < min(self.lon_array):
+                raise Exception("Error in in given lon coordinates."
                                 "Given lon value is not in the IMD data range!! ")
 
         if lat is None and lon is None:
