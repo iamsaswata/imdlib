@@ -41,7 +41,7 @@ short_name_dict = {
 }
 
 # Dictionary of functions
-# Representing untits in netcdf data
+# Representing units in netcdf data
 
 units_dic_anu = {
     "cwd": "Days",
