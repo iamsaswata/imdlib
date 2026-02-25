@@ -701,14 +701,6 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
 
     try:
         for year in years:
-            # Setting parameters
-            print("Downloading: " + var + " for year " + str(year))
-
-            data = {var: year}
-            # Requesting the dataset
-            response = requests.post(url, data=data, proxies=proxies)
-            response.raise_for_status()
-
             # Setting file name
             if file_dir is not None:
                 if fn_format == 'yearwise':
@@ -728,6 +720,19 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
                         fname = var_type + '/' + fini + str(year) + fend
                     else:
                         fname = fini + str(year) + fend
+
+            # Skip download if file already exists and is not corrupt
+            if os.path.isfile(fname) and os.path.getsize(fname) >= 1024:
+                print("File already exists: " + fname + ". Skipping download.")
+                continue
+
+            # Setting parameters
+            print("Downloading: " + var + " for year " + str(year))
+
+            data = {var: year}
+            # Requesting the dataset
+            response = requests.post(url, data=data, proxies=proxies)
+            response.raise_for_status()
 
             # Saving file
             with open(fname, 'wb') as f:

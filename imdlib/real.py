@@ -213,6 +213,24 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
             os.mkdir(file_dir)
     try:
         for day in days:
+            if var_type == 'rain':
+                f_mid = day.strftime("%y_%m_%d")
+            elif var_type == 'rain_gpm':
+                f_mid = day.strftime("%d%m%Y")
+            else:
+                f_mid = day.strftime("%d%m%Y")
+
+            # Setting file name
+            if file_dir is not None:
+                fname = file_dir + '/' + fini + f_mid + fend
+            else:
+                fname = fini + f_mid + fend
+
+            # Skip download if file already exists and is not corrupt
+            if os.path.isfile(fname) and os.path.getsize(fname) >= 1024:
+                print("File already exists: " + fname + ". Skipping download.")
+                continue
+
             # Setting parameters
             print("Downloading: " + var + " for date " + str(day.date()))
 
@@ -220,24 +238,11 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
             # Requesting the dataset
             response = requests.post(url, data=data, proxies=proxies)
             response.raise_for_status()
-            
+
             if len(response.content) < 1:
                 raise Exception("Error in file download. \nData not downloaded for date : {}. \nStopping IMDLIB".format(str(day.date())))
                 return data
-            
-            if var_type == 'rain':
-                f_mid = day.strftime("%y_%m_%d")
-            elif var_type == 'rain_gpm':
-                f_mid = day.strftime("%d%m%Y")
-            else:
-                f_mid = day.strftime("%d%m%Y")
-                
-            # Setting file name
-            if file_dir is not None:
-                fname = file_dir + '/' + fini + f_mid + fend
-            else:
-                fname = fini + f_mid + fend
-                
+
             # Saving file
             with open(fname, 'wb') as f:
                 f.write(response.content)
