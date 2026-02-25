@@ -1,6 +1,59 @@
 import numpy as np
+import pandas as pd
 from datetime import date
 from pathlib import Path
+
+
+def parse_date_input(start, end=None):
+    """Parse date input that can be int year or 'YYYY-MM-DD' string.
+
+    Returns (start_day, end_day, start_yr, end_yr)
+
+    Raises ValueError if date string is not a valid date.
+    """
+    if end is None:
+        end = start
+
+    if isinstance(start, (int, np.integer)):
+        start_day = f"{start}-01-01"
+        start_yr = int(start)
+    elif isinstance(start, str):
+        try:
+            parsed = pd.Timestamp(start)
+        except (ValueError, pd.errors.OutOfBoundsDatetime):
+            raise ValueError(
+                f"Invalid start date '{start}'. Expected format: 'YYYY-MM-DD' or integer year."
+            )
+        start_day = parsed.strftime('%Y-%m-%d')
+        start_yr = parsed.year
+    else:
+        raise TypeError(
+            f"start must be an int (year) or str ('YYYY-MM-DD'), got {type(start).__name__}"
+        )
+
+    if isinstance(end, (int, np.integer)):
+        end_day = f"{end}-12-31"
+        end_yr = int(end)
+    elif isinstance(end, str):
+        try:
+            parsed = pd.Timestamp(end)
+        except (ValueError, pd.errors.OutOfBoundsDatetime):
+            raise ValueError(
+                f"Invalid end date '{end}'. Expected format: 'YYYY-MM-DD' or integer year."
+            )
+        end_day = parsed.strftime('%Y-%m-%d')
+        end_yr = parsed.year
+    else:
+        raise TypeError(
+            f"end must be an int (year) or str ('YYYY-MM-DD'), got {type(end).__name__}"
+        )
+
+    if pd.Timestamp(start_day) > pd.Timestamp(end_day):
+        raise ValueError(
+            f"Start date ({start_day}) must not be after end date ({end_day})."
+        )
+
+    return start_day, end_day, start_yr, end_yr
 
 
 def LeapYear(year):

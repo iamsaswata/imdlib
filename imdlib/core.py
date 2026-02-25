@@ -8,7 +8,7 @@ import pandas as pd
 import os
 import requests
 import xarray as xr
-from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename
+from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename, parse_date_input
 from datetime import datetime
 # Added 14-05-2023 #
 from scipy.interpolate import griddata 
@@ -502,14 +502,17 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     #######################################
     # Format Date into <yyyy-mm-dd>
 
-    # Handling ending year not given case
-    if sum([bool(start_yr), bool(end_yr)]) == 1:
-        end_yr = start_yr
+    # Parse start/end inputs (supports both int years and 'YYYY-MM-DD' strings)
+    start_day, end_day, start_yr_int, end_yr_int = parse_date_input(start_yr, end_yr)
 
-    start_day = "{}{}{:02d}{}{:02d}".format(start_yr, '-', 1, '-', 1)
-    end_day = "{}{}{:02d}{}{:02d}".format(end_yr, '-', 12, '-', 31)
+    # Full-year boundaries for loading complete year files
+    full_start_day = f"{start_yr_int}-01-01"
+    full_end_day = f"{end_yr_int}-12-31"
 
-    # Get total no of days (considering leap years)
+    # Get total no of days for full year range (considering leap years)
+    no_days_full = total_days(full_start_day, full_end_day)
+
+    # Get total no of days for requested range
     no_days = total_days(start_day, end_day)
 
     # Decide which variable we are looking into
@@ -525,11 +528,11 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
 
     # Loop through all the years
     # all_data -> container to store data for all the year
-    # all_data.shape = (no_days, len(lon), len(lat))
-    all_data = np.empty((no_days, lon_size_class, lat_size_class))
+    # all_data.shape = (no_days_full, len(lon), len(lat))
+    all_data = np.empty((no_days_full, lon_size_class, lat_size_class))
     # Counter for total days. It helps filling 'all_data' array.
     count_day = 0
-    for i in range(start_yr, end_yr + 1):
+    for i in range(start_yr_int, end_yr_int + 1):
 
         # Decide resolution of input file name
         fname = get_filename(i, var_type, fn_format, file_dir)
@@ -572,6 +575,11 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         #     all_data = np.vstack((all_data, data))
         # else:
         #     all_data = data
+
+    # Slice data to requested date range (handles sub-year ranges)
+    if start_day != full_start_day or end_day != full_end_day:
+        start_offset = total_days(full_start_day, start_day) - 1
+        all_data = all_data[start_offset:start_offset + no_days, :, :]
 
     # Create a IMD object
     if var_type == 'rain':
@@ -664,11 +672,10 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
-    # Handling ending year not given case
-    if sum([bool(start_yr), bool(end_yr)]) == 1:
-        end_yr = start_yr
+    # Parse date inputs to extract integer years for download loop
+    _, _, start_yr_int, end_yr_int = parse_date_input(start_yr, end_yr)
 
-    years = np.arange(start_yr, end_yr + 1)
+    years = np.arange(start_yr_int, end_yr_int + 1)
 
     # Handling location for saving data
     if file_dir is not None:
