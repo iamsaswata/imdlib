@@ -711,7 +711,7 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
                         fname = os.path.join(
                             file_dir, var_type) + '/' + fini + str(year) + fend
                     else:
-                        fname = fini + str(year) + fend
+                        fname = os.path.join(file_dir, fini + str(year) + fend)
             else:
                 if fn_format == 'yearwise':
                     fname = var_type + '/' + str(year) + fend
