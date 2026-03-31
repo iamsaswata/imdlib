@@ -939,6 +939,69 @@ def cwd(imd_obj, threshold=2.5):
         return imd_obj
 
 
+def cdd(imd_obj, threshold=1.0):
+    """
+    Function for finding Consecutive Dry Days in a year
+
+    Parameters
+    ----------
+    obj : IMD
+    threshold : float, optional
+        Precipitation threshold in mm (default: 1.0 mm, ETCCDI standard).
+        Days with rainfall < threshold are considered dry days.
+
+    Returns
+    -------
+    IMD object
+        Modified IMD object with computed Consecutive Dry Days in a year
+
+    Examples
+    --------
+    >>> start_yr = 2015
+    >>> end_yr = 2019
+    >>> variable = 'rain'
+    >>> data = imd.open_data(variable, start_yr, end_yr, 'yearwise')
+    >>> data.compute('cdd', 'A')
+    """
+
+    if not imd_obj.cat == 'rain':
+        raise Exception('Input data is not rainfall type')
+    else:
+        bk_list = bk_point(imd_obj)
+        new_data = np.ones((bk_list.shape[0],
+                            imd_obj.data.shape[1],
+                            imd_obj.data.shape[2]),
+                           dtype=np.float64) * np.nan
+
+        if imd_obj.land_mask is not None:
+            idx = np.argwhere(imd_obj.land_mask)
+
+        for i in range(bk_list.shape[0]):
+            if i == 0:
+                tmp_data = imd_obj.data[0:bk_list[i], :, :].copy()
+            else:
+                tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
+
+            if imd_obj.land_mask is None:
+                idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
+
+            for i2 in range(len(idx)):
+                dry_days = np.where(tmp_data[:, idx[i2, 0],
+                                    idx[i2, 1]] < threshold)[0]
+                if len(dry_days) == 0:
+                    new_data[i, idx[i2, 0], idx[i2, 1]] = 0
+                else:
+                    new_data[i, idx[i2, 0], idx[i2, 1]] = \
+                        np.max(np.diff(np.concatenate(([-1],) +
+                               np.nonzero(np.diff(dry_days) != 1) +
+                                        ([len(dry_days)-1],))))
+
+        imd_obj.data = new_data
+        imd_obj.time_step = new_data.shape[0]
+
+        return imd_obj
+
+
 def d64(imd_obj, threshold=64.5):
     """
     Function for finding number of heavy rainfall days in a year
@@ -1158,6 +1221,7 @@ def pci(imd_obj):
 
 
 func_anu_dict = {
+    "cdd": cdd,
     "cwd": cwd,
     "dr": dr,
     "dtr": dtr_anu,
