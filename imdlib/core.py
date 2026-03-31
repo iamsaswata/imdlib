@@ -79,7 +79,7 @@ class IMD(Compute):
 
     """
 
-    def __init__(self, data, cat, start_day, end_day, no_days, lat, lon):
+    def __init__(self, data, cat, start_day, end_day, no_days, lat, lon, land_mask=None):
         self.data = data
         self.cat = cat
         self.start_day = start_day
@@ -88,6 +88,7 @@ class IMD(Compute):
         self.lon_array = lon
         self.no_days = no_days
         self.computed = False
+        self.land_mask = land_mask
 
     @property
     def shape(self):
@@ -376,6 +377,9 @@ class IMD(Compute):
         self.lat_array = ynew
         self.lon_array = xnew
 
+        if self.land_mask is not None:
+            self.land_mask = ~np.isnan(self.data[0, :, :])
+
     def clip(self, shpfile):
         """
         Function to clip a IMD object for a roi using shapefile.
@@ -425,11 +429,17 @@ class IMD(Compute):
             self.data = self.data[:, lon_min_indx:lon_max_indx + 1,
                                   lat_min_indx:lat_max_indx + 1]
 
+            if self.land_mask is not None:
+                self.land_mask = self.land_mask[lon_min_indx:lon_max_indx + 1,
+                                                lat_min_indx:lat_max_indx + 1]
+
             for i in range(self.data.shape[1]):      # lon loop
                 for j in range(self.data.shape[2]):  # lat loop
                     pt = Point(self.lon_array[i], self.lat_array[j])
                     if not pt.within(combined_polygon):
                         self.data[:, i, j] = np.nan
+                        if self.land_mask is not None:
+                            self.land_mask[i, j] = False
         else:
             raise Exception("shapefile or shapely library is missing")
 
@@ -445,7 +455,9 @@ class IMD(Compute):
         >>> data = imd.open_data(variable, start_yr, end_yr, 'yearwise')
         >>> tmp = data.copy() 
         """
-        return IMD(self.data, self.cat, self.start_day, self.end_day, self.no_days, self.lat_array, self.lon_array)
+        return IMD(self.data.copy(), self.cat, self.start_day, self.end_day,
+                   self.no_days, self.lat_array.copy(), self.lon_array.copy(),
+                   self.land_mask.copy() if self.land_mask is not None else None)
 
 
 
@@ -581,16 +593,28 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         start_offset = total_days(full_start_day, start_day) - 1
         all_data = all_data[start_offset:start_offset + no_days, :, :]
 
+    # Build land mask to identify valid grid cells
+    if var_type == 'rain':
+        # Part 1: mask -999 sentinel (ocean/outside India)
+        land_mask = (all_data[0, :, :] != -999.0)
+        # Part 2: mask cells with zero rainfall across all loaded days
+        # (boundary cells with no real observations, reported as 0.0)
+        all_zero = (all_data == 0.0).all(axis=0)
+        land_mask = land_mask & ~all_zero
+    else:
+        # tmin/tmax: sentinel is the corner value (data[0, 0, 0])
+        land_mask = (all_data[0, :, :] != all_data[0, 0, 0])
+
     # Create a IMD object
     if var_type == 'rain':
         data = IMD(all_data, 'rain', start_day, end_day, no_days,
-                   lat_rain, lon_rain)
+                   lat_rain, lon_rain, land_mask)
     elif var_type == 'tmin':
         data = IMD(all_data, 'tmin', start_day, end_day, no_days,
-                   lat_temp, lon_temp)
+                   lat_temp, lon_temp, land_mask)
     elif var_type == 'tmax':
         data = IMD(all_data, 'tmax', start_day, end_day, no_days,
-                   lat_temp, lon_temp)
+                   lat_temp, lon_temp, land_mask)
     else:
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")

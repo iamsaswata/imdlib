@@ -524,7 +524,10 @@ def anu_trend(imd_obj):
 
         # new_data[np.where(np.isnan(new_data))] = nan_hint
         # idx = np.argwhere(new_data[0, :, :] != nan_hint)
-        idx = np.argwhere(~ np.isnan(new_data[0, :, :]))
+        if imd_obj.land_mask is not None:
+            idx = np.argwhere(imd_obj.land_mask)
+        else:
+            idx = np.argwhere(~ np.isnan(new_data[0, :, :]))
         if imd_obj.method == 'mmk_hr':
             for i2 in range(len(idx)):
                 out_data[0, idx[i2, 0], idx[i2, 1]] = mmk_hr(
@@ -795,7 +798,10 @@ def rx5d(imd_obj):
             else:
                 tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
+            if imd_obj.land_mask is not None:
+                idx = np.argwhere(imd_obj.land_mask)
+            else:
+                idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
             for i2 in range(len(idx)):
                 new_data[i, idx[i2, 0], idx[i2, 1]] = \
                 np.max(np.convolve(tmp_data[:, idx[i2, 0], idx[i2, 1]],
@@ -847,7 +853,10 @@ def dr(imd_obj, threshold=2.5):
             else:
                 tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
+            if imd_obj.land_mask is not None:
+                idx = np.argwhere(imd_obj.land_mask)
+            else:
+                idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
 
             for i2 in range(len(idx)):
                 new_data[i, idx[i2, 0], idx[i2, 1]] = \
@@ -898,7 +907,10 @@ def cwd(imd_obj, threshold=2.5):
             else:
                 tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
+            if imd_obj.land_mask is not None:
+                idx = np.argwhere(imd_obj.land_mask)
+            else:
+                idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
 
             for i2 in range(len(idx)):
                 new_data[i, idx[i2, 0], idx[i2, 1]] = \
@@ -953,7 +965,10 @@ def d64(imd_obj, threshold=64.5):
             else:
                 tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
+            if imd_obj.land_mask is not None:
+                idx = np.argwhere(imd_obj.land_mask)
+            else:
+                idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
 
             for i2 in range(len(idx)):
                 new_data[i, idx[i2, 0], idx[i2, 1]] = \
@@ -1003,7 +1018,10 @@ def rtwd(imd_obj, threshold=2.5):
             else:
                 tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
+            if imd_obj.land_mask is not None:
+                idx = np.argwhere(imd_obj.land_mask)
+            else:
+                idx = np.argwhere(~ np.isnan(tmp_data[0, :, :]))
             for i2 in range(len(idx)):
                 new_data[i, idx[i2, 0], idx[i2, 1]] = \
                     sum(tmp_data[:, idx[i2, 0],
