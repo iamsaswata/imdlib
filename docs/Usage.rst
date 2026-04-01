@@ -271,3 +271,91 @@ An example of computing consecutive dry days (longest dry spell) between year 20
 
     # Using IMD rainy-day threshold (2.5 mm)
     cdd = rain.compute('cdd', 'A', threshold=2.5)
+
+
+Heat Wave & Cold Wave
+=====================
+
+Detect heat waves and cold waves using IMD's official two-gate classification
+with terrain-specific thresholds (plains, hilly, coastal).
+
+- Heat wave detection requires ``tmax`` data.
+- Cold wave detection requires ``tmin`` data.
+- A bundled region mask classifies each grid cell as plains, hilly, or coastal.
+
+**Output modes:**
+
+- ``output='daily'`` — Returns a per-day classification for each grid cell:
+  ``0`` = no event, ``1`` = heat/cold wave, ``2`` = severe heat/cold wave.
+  Shape: same as input ``(no_days, lon, lat)``.
+
+- ``output='annual'`` — Returns annual count of event days per grid cell.
+  Shape: ``(no_years, lon, lat)``. Use ``count`` to select which events to count:
+
+  - ``count='total'`` — all event days (heat/cold wave + severe). **(default)**
+  - ``count='hw'`` or ``count='cw'`` — only non-severe event days.
+  - ``count='severe'`` — only severe event days.
+
+**Normal period (climatological reference):**
+
+- If loaded data spans **>= 30 years**, normals are computed automatically from the full data range.
+- If loaded data spans **< 30 years**, you must provide ``norm_start`` and ``norm_end`` (minimum 10 years).
+- The normal period can extend **outside** the loaded data range — imdlib will automatically download the required data.
+
+Daily classification
+--------------------
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # Each cell on each day is classified as 0 (no event), 1 (HW), or 2 (severe HW)
+    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    hw = data.heatwave(output='daily')
+    # hw.data.shape: (10958, 31, 31) — same as input
+
+Annual counts
+-------------
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # Total heat wave days per year (HW + severe)
+    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    hw = data.heatwave(output='annual', count='total')
+    # hw.data.shape: (30, 31, 31) — one value per year
+
+    # Only severe heat wave days per year
+    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    hw = data.heatwave(output='annual', count='severe')
+
+    # Only non-severe heat wave days per year
+    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    hw = data.heatwave(output='annual', count='hw')
+
+Cold wave detection
+-------------------
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # Same interface as heatwave, but uses tmin
+    data = imd.open_data('tmin', 1991, 2020, 'yearwise', file_dir)
+    cw = data.coldwave(output='annual', count='total')
+
+Custom normal period
+--------------------
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # For short data ranges, provide the normal period explicitly
+    data = imd.open_data('tmax', 2015, 2020, 'yearwise', file_dir)
+    hw = data.heatwave(output='annual', norm_start=2015, norm_end=2020)
+
+    # Normal period can be outside loaded data (will download if needed)
+    data = imd.open_data('tmax', 2018, 2020, 'yearwise', file_dir)
+    hw = data.heatwave(output='annual', norm_start=1991, norm_end=2020)
