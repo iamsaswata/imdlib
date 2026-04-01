@@ -229,3 +229,18 @@ An example of computing heavy precipitation days between year 2015 and 2019 is a
     variable = 'rain'
     rain = imd.get_data(variable, start_yr, end_yr,'yearwise', '../data')
     d64 =  rain.compute('d64', 'A', threshold=64.5)
+
+An example of computing consecutive dry days (longest dry spell) between year 2015 and 2019:
+
+.. code-block:: python
+
+    import imdlib as imd
+    start_yr, end_yr = 2015, 2019
+    variable = 'rain'
+    rain = imd.get_data(variable, start_yr, end_yr, 'yearwise', '../data')
+
+    # Using ETCCDI standard threshold (1.0 mm)
+    cdd = rain.compute('cdd', 'A')
+
+    # Using IMD rainy-day threshold (2.5 mm)
+    cdd = rain.compute('cdd', 'A', threshold=2.5)

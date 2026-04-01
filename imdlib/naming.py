@@ -2,6 +2,7 @@
 # Representing long name in netcdf data
 
 long_name_dict_anu = {
+    "cdd": "Consecutive dry days",
     "cwd": "Consecutive wet days",
     "dr": "Rainy days",
     "dtr": "Diurnal Temperature Range",
@@ -23,6 +24,7 @@ long_name_dict_anu = {
 # Representing short name in netcdf data
 
 short_name_dict = {
+    "cdd": "cdd",
     "cwd": "cwd",
     "dr": "dr",
     "dtr": "dtr",
@@ -44,6 +46,7 @@ short_name_dict = {
 # Representing units in netcdf data
 
 units_dic_anu = {
+    "cdd": "Days",
     "cwd": "Days",
     "dr": "Days",
     "dtr": "C",

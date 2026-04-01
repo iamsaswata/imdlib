@@ -1,5 +1,6 @@
 Index ,Description
 Rainy days (dr) ,Total number of days in a year with rainfall over a threshold  (default: 2.5 mm)
+Consecutive dry days (cdd),The maximum length of dry spell (maximum consecutive days in a year with precipitation < a threshold (default: 1.0 mm))
 Consecutive wet days (cwd),The maximum length of wet spell (maximum consecutive days in a year with precipitation ≥ a threshold  (default: 2.5 mm))
 Heavy precipitation days (d64),The number of days in a year with precipitation ≥ a threshold  (default: 64 mm)
 Total precipitation in wet days (rtwd),The sum of precipitation in all the rainy days of a year
