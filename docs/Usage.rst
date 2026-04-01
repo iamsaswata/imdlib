@@ -99,6 +99,33 @@ Getting the xarray object for further processing:
         crs:          epsg:4326
 
 
+Climatology & Anomaly
+=====================
+
+Compute monthly climatology (long-term mean) and anomaly (departure from mean).
+For rainfall, monthly values are totals (mm). For temperature, monthly values are means (C).
+Requires at least one full year of daily data.
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # Monthly climatology — shape: (12, lon, lat)
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    clim = data.climatology()
+
+    # Monthly anomaly against own mean — shape: (N_months, lon, lat)
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    anom = data.anomaly()
+
+    # Anomaly against a reference period (e.g., 1991-2020 baseline)
+    ref = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    ref_clim = ref.climatology()
+
+    recent = imd.open_data('rain', 2020, 2020, 'yearwise', file_dir)
+    anom = recent.anomaly(ref_clim)
+
+
 Plotting
 ========
 
