@@ -92,6 +92,18 @@ def test_copy_preserves_land_mask():
     assert data.land_mask[0, 0] != copied.land_mask[0, 0]
 
 
+def test_cdd():
+    """CDD should return valid values in range [0, 365] for land cells only."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    result = data.compute('cdd', 'A')
+    valid = result.data[~np.isnan(result.data)]
+    assert len(valid) == data.land_mask.sum()
+    assert valid.min() >= 0
+    assert valid.max() < 366
+
+
 def test_bk_point_month_leap_year():
     """bk_point_month should handle leap years correctly."""
     if not _has_data(2000):
