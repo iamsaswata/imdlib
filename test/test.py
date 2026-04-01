@@ -104,6 +104,92 @@ def test_cdd():
     assert valid.max() < 366
 
 
+def test_climatology_shape():
+    """Climatology should produce shape (12, lon, lat) regardless of input years."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    clim = data.climatology()
+    assert clim.data.shape == (12, 135, 129)
+    assert clim.computed == True
+    assert clim.scale == 'climatology'
+    # Valid cells should match land_mask for all 12 months
+    for m in range(12):
+        valid = np.sum(~np.isnan(clim.data[m, :, :]))
+        assert valid == clim.land_mask.sum()
+
+
+def test_climatology_values():
+    """July climatology should be much higher than January (monsoon)."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    clim = data.climatology()
+    jan_mean = np.nanmean(clim.data[0, :, :])
+    jul_mean = np.nanmean(clim.data[6, :, :])
+    assert jul_mean > jan_mean * 5  # monsoon July >> dry January
+
+
+def test_anomaly_shape():
+    """Anomaly should produce shape (N_months, lon, lat)."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    anom = data.anomaly()
+    assert anom.data.shape == (12, 135, 129)  # 1 year = 12 months
+    assert anom.computed == True
+    assert anom.scale == 'anomaly'
+
+
+def test_anomaly_self_is_zero():
+    """Anomaly against own climatology should be all zeros."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    anom = data.anomaly()
+    valid = anom.data[~np.isnan(anom.data)]
+    assert np.allclose(valid, 0.0)
+
+
+def test_anomaly_external_climatology():
+    """Anomaly with external climatology should work."""
+    if not _has_data(2018, 2000):
+        return
+    ref = imd.open_data('rain', 2000, 2000, 'yearwise', _data_dir())
+    ref_clim = ref.climatology()
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    anom = data.anomaly(ref_clim)
+    assert anom.data.shape == (12, 135, 129)
+    # Anomaly against different year should NOT be all zeros
+    valid = anom.data[~np.isnan(anom.data)]
+    assert not np.allclose(valid, 0.0)
+
+
+def test_climatology_computed_guard():
+    """Climatology should raise on already-computed data."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    data.compute('dr', 'A')
+    try:
+        data.climatology()
+        assert False, 'Should have raised'
+    except Exception:
+        pass
+
+
+def test_climatology_sub_year_guard():
+    """Climatology should raise on sub-year data."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', '2018-06-01', '2018-09-30', 'yearwise', _data_dir())
+    try:
+        data.climatology()
+        assert False, 'Should have raised'
+    except Exception:
+        pass
+
+
 def test_bk_point_month_leap_year():
     """bk_point_month should handle leap years correctly."""
     if not _has_data(2000):

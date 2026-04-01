@@ -12,7 +12,7 @@ from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename, parse_d
 from datetime import datetime
 # Added 14-05-2023 #
 from scipy.interpolate import griddata 
-from imdlib.compute import Compute
+from imdlib.compute import Compute, bk_point_month
 from imdlib.naming import long_name_dict_anu, short_name_dict, units_dic_anu
 try:
     import rioxarray as rio
@@ -165,8 +165,12 @@ class IMD(Compute):
         data_xr = np.swapaxes(self.data, 1, 2)
         # To support computed data; Added on 23-07-2023
         if self.computed:
-            if self.scale  == 'A':
-                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq = 'A')
+            if self.scale == 'A':
+                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='YE')
+            elif self.scale == 'climatology':
+                time = pd.date_range('2000-01-01', periods=12, freq='ME')
+            elif self.scale == 'anomaly':
+                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='ME')
         else:
             time = pd.date_range(self.start_day, periods=self.no_days)
         time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
@@ -279,6 +283,172 @@ class IMD(Compute):
         self.method = method
         self.scale = scale
         return super().compute(method, scale, **kwargs)
+
+    def _monthly_aggregate(self):
+        """
+        Aggregate daily data to monthly values.
+
+        For rainfall: monthly sum (total mm).
+        For temperature: monthly mean (average C).
+
+        Returns
+        -------
+        numpy 3D array
+            shape (N_months, lon_size, lat_size)
+        """
+        bk_list = bk_point_month(self)
+        n_months = bk_list.shape[0]
+
+        # Determine sentinel value
+        if self.cat in ('rain', 'rain_gpm'):
+            nan_hint = -999.0
+        else:
+            nan_hint = self.data[0, 0, 0]
+
+        mon_data = np.ones((n_months, self.data.shape[1],
+                            self.data.shape[2]),
+                           dtype=np.float64) * np.nan
+
+        for i in range(n_months):
+            if i == 0:
+                tmp_data = self.data[0:bk_list[i], :, :].copy()
+            else:
+                tmp_data = self.data[bk_list[i-1]:bk_list[i], :, :].copy()
+
+            tmp_data[tmp_data == nan_hint] = np.nan
+
+            if self.cat in ('rain', 'rain_gpm'):
+                mon_data[i, :, :] = np.nansum(tmp_data, axis=0)
+                # np.nansum returns 0 for all-NaN slices; restore NaN
+                all_nan = np.all(np.isnan(tmp_data), axis=0)
+                mon_data[i, all_nan] = np.nan
+            else:
+                mon_data[i, :, :] = np.nanmean(tmp_data, axis=0)
+
+        # Apply land_mask
+        if self.land_mask is not None:
+            mon_data[:, ~self.land_mask] = np.nan
+
+        return mon_data
+
+    def climatology(self):
+        """
+        Compute monthly climatology (long-term monthly mean).
+
+        For rainfall: mean of monthly totals for each calendar month.
+        For temperature: mean of monthly means for each calendar month.
+
+        Requires at least one full year of daily (non-computed) data.
+        Modifies the IMD object in-place.
+
+        Returns
+        -------
+        IMD object
+            Modified IMD object with shape (12, lon_size, lat_size)
+
+        Examples
+        --------
+        >>> data = imd.open_data('rain', 1991, 2020, 'yearwise')
+        >>> clim = data.climatology()
+        >>> clim.data.shape
+        (12, 135, 129)
+        """
+        if self.computed:
+            raise Exception('Climatology requires daily (non-computed) data')
+        if self.no_days < 365:
+            raise Exception('Climatology requires at least one full year of data')
+
+        mon_data = self._monthly_aggregate()
+        n_months = mon_data.shape[0]
+
+        # Group by calendar month and compute mean across years
+        clim_data = np.ones((12, self.data.shape[1],
+                             self.data.shape[2]),
+                            dtype=np.float64) * np.nan
+
+        for m in range(12):
+            # Collect same calendar month across all years
+            month_indices = np.arange(m, n_months, 12)
+            clim_data[m, :, :] = np.nanmean(
+                mon_data[month_indices, :, :], axis=0)
+
+        # Apply land_mask
+        if self.land_mask is not None:
+            clim_data[:, ~self.land_mask] = np.nan
+
+        self.data = clim_data
+        self.computed = True
+        self.scale = 'climatology'
+
+        return self
+
+    def anomaly(self, climatology=None):
+        """
+        Compute monthly anomaly (departure from climatology).
+
+        For rainfall: monthly total minus climatological monthly total.
+        For temperature: monthly mean minus climatological monthly mean.
+
+        Parameters
+        ----------
+        climatology : IMD object, optional
+            Pre-computed climatology (shape 12, lon, lat) to use as baseline.
+            If None, climatology is computed from the data itself.
+
+        Returns
+        -------
+        IMD object
+            Modified IMD object with shape (N_months, lon_size, lat_size)
+
+        Examples
+        --------
+        >>> data = imd.open_data('rain', 2015, 2020, 'yearwise')
+        >>> anom = data.anomaly()
+
+        >>> # Or with external baseline:
+        >>> ref = imd.open_data('rain', 1981, 2010, 'yearwise')
+        >>> ref_clim = ref.climatology()
+        >>> data = imd.open_data('rain', 2020, 2020, 'yearwise')
+        >>> anom = data.anomaly(ref_clim)
+        """
+        if self.computed:
+            raise Exception('Anomaly requires daily (non-computed) data')
+        if self.no_days < 365:
+            raise Exception('Anomaly requires at least one full year of data')
+
+        if climatology is not None:
+            # Validate external climatology
+            if climatology.data.shape[0] != 12:
+                raise Exception('Climatology must have shape (12, lon, lat)')
+            if climatology.data.shape[1:] != self.data.shape[1:]:
+                raise Exception('Climatology grid dimensions do not match data')
+            if climatology.cat != self.cat:
+                raise Exception('Climatology variable type does not match data')
+            clim_data = climatology.data
+        else:
+            # Compute climatology from own data (on a copy)
+            tmp = self.copy()
+            tmp.climatology()
+            clim_data = tmp.data
+
+        # Aggregate daily to monthly
+        mon_data = self._monthly_aggregate()
+        n_months = mon_data.shape[0]
+
+        # Subtract corresponding calendar month's climatology
+        for i in range(n_months):
+            m = i % 12  # calendar month index
+            mon_data[i, :, :] = mon_data[i, :, :] - clim_data[m, :, :]
+
+        # Apply land_mask
+        if self.land_mask is not None:
+            mon_data[:, ~self.land_mask] = np.nan
+
+        self.data = mon_data
+        self.computed = True
+        self.scale = 'anomaly'
+
+        return self
 
     def fill_na(self):
         """
