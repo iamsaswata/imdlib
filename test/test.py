@@ -13,6 +13,11 @@ def _has_data(*years):
     return all(os.path.isfile(os.path.join(d, 'rain', f'{y}.grd')) for y in years)
 
 
+def _has_temp_data(var_type, *years):
+    d = _data_dir()
+    return all(os.path.isfile(os.path.join(d, var_type, f'{y}.GRD')) for y in years)
+
+
 def test_read():
     if not _has_data(2018):
         return
@@ -200,3 +205,65 @@ def test_bk_point_month_leap_year():
     bk = bk_point_month(data)
     assert bk[-1] == 366  # leap year total days
     assert bk[1] == 60    # Jan(31) + Feb(29) = 60
+
+
+def test_heatwave_daily():
+    """Heatwave daily output should have same time dimension as input."""
+    if not _has_temp_data('tmax', *range(1991, 2021)):
+        return
+    data = imd.open_data('tmax', 1991, 2020, 'yearwise', _data_dir())
+    hw = data.heatwave(output='daily')
+    assert hw.data.shape == (10958, 31, 31)
+    valid = hw.data[~np.isnan(hw.data)]
+    # Values should only be 0, 1, or 2
+    assert set(np.unique(valid)).issubset({0.0, 1.0, 2.0})
+
+
+def test_heatwave_annual_counts():
+    """Annual HW counts: total should equal hw + severe."""
+    if not _has_temp_data('tmax', *range(1991, 2021)):
+        return
+    d1 = imd.open_data('tmax', 1991, 2020, 'yearwise', _data_dir())
+    total = d1.heatwave(output='annual', count='total')
+    d2 = imd.open_data('tmax', 1991, 2020, 'yearwise', _data_dir())
+    hw_only = d2.heatwave(output='annual', count='hw')
+    d3 = imd.open_data('tmax', 1991, 2020, 'yearwise', _data_dir())
+    severe = d3.heatwave(output='annual', count='severe')
+    # total = hw + severe (where not NaN)
+    mask = ~np.isnan(total.data)
+    assert np.allclose(total.data[mask], hw_only.data[mask] + severe.data[mask])
+
+
+def test_coldwave_daily():
+    """Coldwave daily output should have correct shape and values."""
+    if not _has_temp_data('tmin', *range(1991, 2021)):
+        return
+    data = imd.open_data('tmin', 1991, 2020, 'yearwise', _data_dir())
+    cw = data.coldwave(output='daily')
+    assert cw.data.shape == (10958, 31, 31)
+    valid = cw.data[~np.isnan(cw.data)]
+    assert set(np.unique(valid)).issubset({0.0, 1.0, 2.0})
+
+
+def test_heatwave_wrong_variable():
+    """Heatwave should raise on non-tmax data."""
+    if not _has_temp_data('tmin', *range(1991, 2021)):
+        return
+    data = imd.open_data('tmin', 1991, 2020, 'yearwise', _data_dir())
+    try:
+        data.heatwave()
+        assert False, 'Should have raised'
+    except Exception:
+        pass
+
+
+def test_heatwave_short_data_no_norm():
+    """Heatwave should raise on short data without norm period."""
+    if not _has_temp_data('tmax', *range(2015, 2021)):
+        return
+    data = imd.open_data('tmax', 2015, 2020, 'yearwise', _data_dir())
+    try:
+        data.heatwave()
+        assert False, 'Should have raised'
+    except Exception:
+        pass

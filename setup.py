@@ -31,6 +31,7 @@ setup(
     url="https://github.com/iamsaswata/",
     license="MIT",
     packages=find_packages(),
+    package_data={'imdlib': ['data/*.npy']},
     classifiers=[
                  "Programming Language :: Python :: 3",
                  "License :: OSI Approved :: MIT License",

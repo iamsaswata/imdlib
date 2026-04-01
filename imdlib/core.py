@@ -171,6 +171,8 @@ class IMD(Compute):
                 time = pd.date_range('2000-01-01', periods=12, freq='ME')
             elif self.scale == 'anomaly':
                 time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='ME')
+            elif self.scale == 'daily':
+                time = pd.date_range(self.start_day, periods=self.data.shape[0])
         else:
             time = pd.date_range(self.start_day, periods=self.no_days)
         time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
@@ -449,6 +451,88 @@ class IMD(Compute):
         self.scale = 'anomaly'
 
         return self
+
+    def heatwave(self, output='daily', count='total',
+                 norm_start=None, norm_end=None):
+        """
+        Detect heat waves using IMD's two-gate classification system.
+
+        Requires tmax data. Uses terrain-specific thresholds (plains,
+        hilly, coastal) with departure-based and absolute criteria.
+
+        Parameters
+        ----------
+        output : str
+            'daily' — per-day classification: 0=none, 1=HW, 2=severe HW
+            'annual' — annual count of heat wave days per grid cell
+
+        count : str (only for output='annual')
+            'total' — all heat wave days (HW + severe)
+            'hw' — heat wave days only (not severe)
+            'severe' — severe heat wave days only
+
+        norm_start : int, optional
+            Start year for climatological normal period.
+            Auto-detected if data spans >= 30 years.
+
+        norm_end : int, optional
+            End year for climatological normal period.
+            Auto-detected if data spans >= 30 years.
+
+        Returns
+        -------
+        IMD object
+            Modified IMD object with heat wave classification
+
+        Examples
+        --------
+        >>> data = imd.open_data('tmax', 1991, 2020, 'yearwise')
+        >>> hw = data.heatwave(output='annual', count='total')
+        """
+        from imdlib.extreme import _detect_events
+        return _detect_events(self, 'heatwave', output, count,
+                              norm_start, norm_end)
+
+    def coldwave(self, output='daily', count='total',
+                 norm_start=None, norm_end=None):
+        """
+        Detect cold waves using IMD's two-gate classification system.
+
+        Requires tmin data. Uses terrain-specific thresholds (plains,
+        hilly, coastal) with departure-based and absolute criteria.
+
+        Parameters
+        ----------
+        output : str
+            'daily' — per-day classification: 0=none, 1=CW, 2=severe CW
+            'annual' — annual count of cold wave days per grid cell
+
+        count : str (only for output='annual')
+            'total' — all cold wave days (CW + severe)
+            'cw' — cold wave days only (not severe)
+            'severe' — severe cold wave days only
+
+        norm_start : int, optional
+            Start year for climatological normal period.
+            Auto-detected if data spans >= 30 years.
+
+        norm_end : int, optional
+            End year for climatological normal period.
+            Auto-detected if data spans >= 30 years.
+
+        Returns
+        -------
+        IMD object
+            Modified IMD object with cold wave classification
+
+        Examples
+        --------
+        >>> data = imd.open_data('tmin', 1991, 2020, 'yearwise')
+        >>> cw = data.coldwave(output='annual', count='total')
+        """
+        from imdlib.extreme import _detect_events
+        return _detect_events(self, 'coldwave', output, count,
+                              norm_start, norm_end)
 
     def fill_na(self):
         """
