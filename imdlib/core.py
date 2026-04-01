@@ -599,8 +599,11 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         land_mask = (all_data[0, :, :] != -999.0)
         # Part 2: mask cells with zero rainfall across all loaded days
         # (boundary cells with no real observations, reported as 0.0)
-        all_zero = (all_data == 0.0).all(axis=0)
-        land_mask = land_mask & ~all_zero
+        # Only apply when data spans at least a full year to avoid
+        # false positives for short dry-season ranges
+        if no_days >= 365:
+            all_zero = (all_data == 0.0).all(axis=0)
+            land_mask = land_mask & ~all_zero
     else:
         # tmin/tmax: sentinel is the corner value (data[0, 0, 0])
         land_mask = (all_data[0, :, :] != all_data[0, 0, 0])

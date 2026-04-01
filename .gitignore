@@ -42,3 +42,10 @@ miniconda.sh
 
 # python build
 *.egg-info/
+
+# Data files
+*.grd
+*.GRD
+
+# Images
+*.png
