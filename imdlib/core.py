@@ -283,17 +283,25 @@ class IMD(Compute):
             Modified IMD object with computed climatic indices
         """
 
-        self.computed = True
+        # method must be set before dispatch (anu_trend reads it);
+        # metadata must be set before dispatch (spi/spei override long_name)
         self.method = method
-        self.scale = scale
-        # Apply base metadata from registry before compute,
-        # so compute functions (e.g. spi) can override with dynamic values
+        saved_meta = (self.var_name, self.var_units, self.var_long_name)
         if method in VAR_METADATA:
             meta = VAR_METADATA[method]
             self.var_name = meta['var_name']
             self.var_units = meta['units']
             self.var_long_name = meta['long_name']
-        return super().compute(method, scale, **kwargs)
+        try:
+            result = super().compute(method, scale, **kwargs)
+        except Exception:
+            # Rollback — keep object usable after failed compute
+            self.method = None
+            self.var_name, self.var_units, self.var_long_name = saved_meta
+            raise
+        self.computed = True
+        self.scale = scale
+        return result
 
     def _monthly_aggregate(self):
         """
