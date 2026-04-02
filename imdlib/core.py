@@ -13,7 +13,7 @@ from datetime import datetime
 # Added 14-05-2023 #
 from scipy.interpolate import griddata 
 from imdlib.compute import Compute, bk_point_month
-from imdlib.naming import long_name_dict_anu, short_name_dict, units_dic_anu
+from imdlib.naming import RAW_METADATA, VAR_METADATA
 try:
     import rioxarray as rio
     has_rioxarray = True
@@ -89,6 +89,12 @@ class IMD(Compute):
         self.no_days = no_days
         self.computed = False
         self.land_mask = land_mask
+        # Variable metadata — defaults from raw data type,
+        # overridden by compute/heatwave/climatology/etc.
+        meta = RAW_METADATA[cat]
+        self.var_name = meta['var_name']
+        self.var_units = meta['units']
+        self.var_long_name = meta['long_name']
 
     @property
     def shape(self):
@@ -178,54 +184,44 @@ class IMD(Compute):
         else:
             time = pd.date_range(self.start_day, periods=self.no_days)
         time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
-        if self.cat == 'rain':
-            xr_da = xr.Dataset({'rain': (['time', 'lat', 'lon'], data_xr,
-                                         {'units': 'mm/day', 'long_name': 'Rainfall'})},
-                               coords={'lat': self.lat_array,
-                                       'lon': self.lon_array, 'time': time})
-            xr_da_masked = xr_da.where(xr_da.values != -999.)
-        elif self.cat == 'rain_gpm':
-            xr_da = xr.Dataset({'rain_gpm': (['time', 'lat', 'lon'], data_xr,
-                                         {'units': 'mm/day', 'long_name': 'GPM Merged Rainfall'})},
-                               coords={'lat': self.lat_array,
-                                       'lon': self.lon_array, 'time': time})
-            xr_da_masked = xr_da.where(xr_da.values != -999.)
-        elif self.cat == 'tmin':
-            xr_da = xr.Dataset({'tmin': (['time', 'lat', 'lon'], data_xr,
-                                         {'units': 'C', 'long_name': 'Minimum Temperature'})},
-                               coords={'lat': self.lat_array,
-                                       'lon': self.lon_array, 'time': time})
-            xr_da_masked = xr_da.where(xr_da.values != data_xr[0, 0, 0])
-        elif self.cat == 'tmax':
-            xr_da = xr.Dataset({'tmax': (['time', 'lat', 'lon'], data_xr,
-                                         {'units': 'C', 'long_name': 'Maximum Temperature'})},
-                               coords={'lat': self.lat_array,
-                                       'lon': self.lon_array, 'time': time})
-            xr_da_masked = xr_da.where(xr_da.values != data_xr[0, 0, 0])
 
-        xr_da_masked.time.encoding['units'] = time_units
-        xr_da_masked.time.attrs['standard_name'] = 'time'
-        xr_da_masked.time.attrs['long_name'] = 'time'
+        xr_da = xr.Dataset(
+            {self.var_name: (['time', 'lat', 'lon'], data_xr,
+                             {'units': self.var_units,
+                              'long_name': self.var_long_name})},
+            coords={'lat': self.lat_array,
+                    'lon': self.lon_array, 'time': time})
 
-        xr_da_masked.lon.attrs['axis'] = 'X'  # Optional
-        xr_da_masked.lon.attrs['standard_name'] = 'longitude'
-        xr_da_masked.lon.attrs['long_name'] = 'longitude'
-        xr_da_masked.lon.attrs['units'] = 'degrees_east'
+        # Mask sentinel values only for raw (non-computed) data
+        if not self.computed:
+            if self.cat in ('rain', 'rain_gpm'):
+                xr_da = xr_da.where(xr_da[self.var_name] != -999.)
+            else:
+                xr_da = xr_da.where(xr_da[self.var_name] != data_xr[0, 0, 0])
 
-        xr_da_masked.lat.attrs['axis'] = 'Y'  # Optional
-        xr_da_masked.lat.attrs['standard_name'] = 'latitude'
-        xr_da_masked.lat.attrs['long_name'] = 'latitude'
-        xr_da_masked.lat.attrs['units'] = 'degrees_north'
+        xr_da.time.encoding['units'] = time_units
+        xr_da.time.attrs['standard_name'] = 'time'
+        xr_da.time.attrs['long_name'] = 'time'
 
-        xr_da_masked.attrs['Conventions'] = 'CF-1.7'
-        xr_da_masked.attrs['title'] = 'IMD gridded data'
-        xr_da_masked.attrs['source'] = 'https://imdpune.gov.in/'
-        xr_da_masked.attrs['history'] = str(datetime.utcnow()) + ' Python'
-        xr_da_masked.attrs['references'] = ''
-        xr_da_masked.attrs['comment'] = ''
-        xr_da_masked.attrs['crs'] = 'epsg:4326'
+        xr_da.lon.attrs['axis'] = 'X'  # Optional
+        xr_da.lon.attrs['standard_name'] = 'longitude'
+        xr_da.lon.attrs['long_name'] = 'longitude'
+        xr_da.lon.attrs['units'] = 'degrees_east'
 
-        return xr_da_masked
+        xr_da.lat.attrs['axis'] = 'Y'  # Optional
+        xr_da.lat.attrs['standard_name'] = 'latitude'
+        xr_da.lat.attrs['long_name'] = 'latitude'
+        xr_da.lat.attrs['units'] = 'degrees_north'
+
+        xr_da.attrs['Conventions'] = 'CF-1.7'
+        xr_da.attrs['title'] = 'IMD gridded data'
+        xr_da.attrs['source'] = 'https://imdpune.gov.in/'
+        xr_da.attrs['history'] = str(datetime.utcnow()) + ' Python'
+        xr_da.attrs['references'] = ''
+        xr_da.attrs['comment'] = ''
+        xr_da.attrs['crs'] = 'epsg:4326'
+
+        return xr_da
 
     def to_netcdf(self, file_name=None, out_dir=None):
 
@@ -257,7 +253,11 @@ class IMD(Compute):
                 outname = "{}{}{}{}".format(out_dir, '/', root, ext)
             else:
                 outname = "{}{}".format(root, ext)
-            xr_da_masked[self.cat].rio.write_nodata(xr_da_masked[self.cat].data[0, -1, -1], inplace=True).rio.to_raster(outname)
+            if self.computed:
+                nodata = np.nan
+            else:
+                nodata = xr_da_masked[self.var_name].data[0, -1, -1]
+            xr_da_masked[self.var_name].rio.write_nodata(nodata, inplace=True).rio.to_raster(outname)
         except:
             raise Exception("rioxarray is not installed")
             
@@ -286,6 +286,13 @@ class IMD(Compute):
         self.computed = True
         self.method = method
         self.scale = scale
+        # Apply base metadata from registry before compute,
+        # so compute functions (e.g. spi) can override with dynamic values
+        if method in VAR_METADATA:
+            meta = VAR_METADATA[method]
+            self.var_name = meta['var_name']
+            self.var_units = meta['units']
+            self.var_long_name = meta['long_name']
         return super().compute(method, scale, **kwargs)
 
     def _monthly_aggregate(self):
@@ -383,6 +390,8 @@ class IMD(Compute):
         self.data = clim_data
         self.computed = True
         self.scale = 'climatology'
+        self.method = 'climatology'
+        self.var_long_name = 'Climatology of {}'.format(self.var_long_name)
 
         return self
 
@@ -451,6 +460,8 @@ class IMD(Compute):
         self.data = mon_data
         self.computed = True
         self.scale = 'anomaly'
+        self.method = 'anomaly'
+        self.var_long_name = 'Anomaly of {}'.format(self.var_long_name)
 
         return self
 
@@ -492,8 +503,19 @@ class IMD(Compute):
         >>> hw = data.heatwave(output='annual', count='total')
         """
         from imdlib.extreme import _detect_events
-        return _detect_events(self, 'heatwave', output, count,
-                              norm_start, norm_end)
+        result = _detect_events(self, 'heatwave', output, count,
+                                norm_start, norm_end)
+        self.method = 'heatwave'
+        if output == 'daily':
+            self.var_name = 'heatwave'
+            self.var_units = 'class'
+            self.var_long_name = 'Heat Wave Classification (0=none, 1=HW, 2=severe)'
+        else:  # annual
+            self.var_name = 'heatwave_days'
+            self.var_units = 'Days'
+            labels = {'total': 'Total', 'hw': 'HW-only', 'severe': 'Severe'}
+            self.var_long_name = 'Annual {} Heat Wave Days'.format(labels[count])
+        return result
 
     def coldwave(self, output='daily', count='total',
                  norm_start=None, norm_end=None):
@@ -533,8 +555,19 @@ class IMD(Compute):
         >>> cw = data.coldwave(output='annual', count='total')
         """
         from imdlib.extreme import _detect_events
-        return _detect_events(self, 'coldwave', output, count,
-                              norm_start, norm_end)
+        result = _detect_events(self, 'coldwave', output, count,
+                                norm_start, norm_end)
+        self.method = 'coldwave'
+        if output == 'daily':
+            self.var_name = 'coldwave'
+            self.var_units = 'class'
+            self.var_long_name = 'Cold Wave Classification (0=none, 1=CW, 2=severe)'
+        else:  # annual
+            self.var_name = 'coldwave_days'
+            self.var_units = 'Days'
+            labels = {'total': 'Total', 'cw': 'CW-only', 'severe': 'Severe'}
+            self.var_long_name = 'Annual {} Cold Wave Days'.format(labels[count])
+        return result
 
     def fill_na(self):
         """
@@ -711,9 +744,17 @@ class IMD(Compute):
         >>> data = imd.open_data(variable, start_yr, end_yr, 'yearwise')
         >>> tmp = data.copy() 
         """
-        return IMD(self.data.copy(), self.cat, self.start_day, self.end_day,
-                   self.no_days, self.lat_array.copy(), self.lon_array.copy(),
-                   self.land_mask.copy() if self.land_mask is not None else None)
+        new = IMD(self.data.copy(), self.cat, self.start_day, self.end_day,
+                  self.no_days, self.lat_array.copy(), self.lon_array.copy(),
+                  self.land_mask.copy() if self.land_mask is not None else None)
+        # Preserve computed state and variable metadata
+        new.computed = self.computed
+        new.method = getattr(self, 'method', None)
+        new.scale = getattr(self, 'scale', None)
+        new.var_name = self.var_name
+        new.var_units = self.var_units
+        new.var_long_name = self.var_long_name
+        return new
 
 
 
