@@ -267,3 +267,66 @@ def test_heatwave_short_data_no_norm():
         assert False, 'Should have raised'
     except Exception:
         pass
+
+
+def test_spi_shape_and_stats():
+    """SPI should produce monthly output close to N(0,1)."""
+    if not _has_data(*range(1991, 2021)):
+        return
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', _data_dir())
+    spi = data.compute('spi', 'M', timescale=3)
+    assert spi.data.shape == (360, 135, 129)
+    valid = spi.data[~np.isnan(spi.data)]
+    assert len(valid) > 0
+    assert abs(valid.mean()) < 0.1
+    assert abs(valid.std() - 1.0) < 0.1
+
+
+def test_spi_first_months_nan():
+    """First (timescale-1) months should be NaN."""
+    if not _has_data(*range(1991, 2021)):
+        return
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', _data_dir())
+    spi = data.compute('spi', 'M', timescale=12)
+    assert np.all(np.isnan(spi.data[:11, :, :]))
+
+
+def test_spi_wrong_variable():
+    """SPI should raise on non-rainfall data."""
+    if not _has_temp_data('tmax', *range(1991, 2021)):
+        return
+    data = imd.open_data('tmax', 1991, 2020, 'yearwise', _data_dir())
+    try:
+        data.compute('spi', 'M', timescale=3)
+        assert False, 'Should have raised'
+    except Exception:
+        pass
+
+
+def test_spi_monthly_scale_protection():
+    """Other indices should not work on monthly scale."""
+    if not _has_data(2018):
+        return
+    data = imd.open_data('rain', 2018, 2018, 'yearwise', _data_dir())
+    try:
+        data.compute('dr', 'M')
+        assert False, 'Should have raised'
+    except Exception:
+        pass
+
+
+def test_spei_shape_and_stats():
+    """SPEI should produce monthly output close to N(0,1)."""
+    if not (_has_data(*range(1991, 2021)) and
+            _has_temp_data('tmax', *range(1991, 2021)) and
+            _has_temp_data('tmin', *range(1991, 2021))):
+        return
+    rain = imd.open_data('rain', 1991, 2020, 'yearwise', _data_dir())
+    tmax = imd.open_data('tmax', 1991, 2020, 'yearwise', _data_dir())
+    tmin = imd.open_data('tmin', 1991, 2020, 'yearwise', _data_dir())
+    spei = rain.compute('spei', 'M', timescale=3, tmax=tmax, tmin=tmin)
+    assert spei.data.shape == (360, 135, 129)
+    valid = spei.data[~np.isnan(spei.data)]
+    assert len(valid) > 0
+    assert abs(valid.mean()) < 0.1
+    assert abs(valid.std() - 1.0) < 0.1
