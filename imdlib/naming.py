@@ -1,65 +1,34 @@
-# Dictionary of functions
-# Representing long name in netcdf data
+# Variable metadata for IMD gridded data and computed indices.
+#
+# RAW_METADATA: attributes for raw input variables (rain, tmin, tmax, rain_gpm).
+# VAR_METADATA: attributes for computed indices, keyed by method string.
 
-long_name_dict_anu = {
-    "cdd": "Consecutive dry days",
-    "cwd": "Consecutive wet days",
-    "dr": "Rainy days",
-    "dtr": "Diurnal Temperature Range",
-    "d64": "Heavy precipitation days",
-    "mmk_hr": "Modified Mann-Kendall[Hamed and Rao, 1998] statistics (Z)",
-    "mnadt": "Min. Annual Daily Tmin (Coolest Night)",
-    "mxadt": "Max. Annual Daily Tmax (Hottest Day)",
-    "pci": "Precipitation concentration index",
-    "rtwd": "Total precipitation in wet days",
-    "rx5d": "Maximum 5 days rainfall",
-    "rxa": "Maximum annual rainfall",
-    "sdii": "Simple precipitation intensity index",
-    "spr": "Spearman’s Rho statistics (Zsr)",
-    "sse": "Sen’s slope estimates",
-    "sstr": "Magnitude of trend"
+RAW_METADATA = {
+    'rain':     {'var_name': 'rain',     'units': 'mm/day', 'long_name': 'Rainfall'},
+    'rain_gpm': {'var_name': 'rain_gpm', 'units': 'mm/day', 'long_name': 'GPM Merged Rainfall'},
+    'tmin':     {'var_name': 'tmin',     'units': 'C',      'long_name': 'Minimum Temperature'},
+    'tmax':     {'var_name': 'tmax',     'units': 'C',      'long_name': 'Maximum Temperature'},
 }
 
-# Dictionary of functions
-# Representing short name in netcdf data
-
-short_name_dict = {
-    "cdd": "cdd",
-    "cwd": "cwd",
-    "dr": "dr",
-    "dtr": "dtr",
-    "d64": "d64",
-    "mmk_hr": "mmk_hr",
-    "mnadt": "mnadt",
-    "mxadt": "mxadt",
-    "pci": "pci",
-    "rtwd": "rtwd",
-    "rx5d": "rx5d",
-    "rxa": "rxa",
-    "sdii": "sdii",
-    "spr": "spr",
-    "sse": "sse",
-    "sstr": "sstr"
-}
-
-# Dictionary of functions
-# Representing units in netcdf data
-
-units_dic_anu = {
-    "cdd": "Days",
-    "cwd": "Days",
-    "dr": "Days",
-    "dtr": "C",
-    "d64": "Days",
-    "mmk_hr": "Z",
-    "mnadt": "C",
-    "mxadt": "C",
-    "pci": "",
-    "rtwd": "mm/year",
-    "rx5d": "mm/year",
-    "rxa": "mm",
-    "sdii": "",
-    "spr": "Zsr",
-    "sse": "Slope",
-    "sstr": "%"
+VAR_METADATA = {
+    # Annual compute indices (scale='A')
+    'cdd':    {'var_name': 'cdd',    'units': 'Days',    'long_name': 'Consecutive dry days'},
+    'cwd':    {'var_name': 'cwd',    'units': 'Days',    'long_name': 'Consecutive wet days'},
+    'dr':     {'var_name': 'dr',     'units': 'Days',    'long_name': 'Rainy days'},
+    'dtr':    {'var_name': 'dtr',    'units': 'C',       'long_name': 'Diurnal Temperature Range'},
+    'd64':    {'var_name': 'd64',    'units': 'Days',    'long_name': 'Heavy precipitation days'},
+    'mmk_hr': {'var_name': 'mmk_hr', 'units': 'Z',       'long_name': 'Modified Mann-Kendall statistics (Z)'},
+    'mnadt':  {'var_name': 'mnadt',  'units': 'C',       'long_name': 'Min. Annual Daily Tmin (Coolest Night)'},
+    'mxadt':  {'var_name': 'mxadt',  'units': 'C',       'long_name': 'Max. Annual Daily Tmax (Hottest Day)'},
+    'pci':    {'var_name': 'pci',    'units': '',        'long_name': 'Precipitation concentration index'},
+    'rtwd':   {'var_name': 'rtwd',   'units': 'mm/year', 'long_name': 'Total precipitation in wet days'},
+    'rx5d':   {'var_name': 'rx5d',   'units': 'mm/year', 'long_name': 'Maximum 5 days rainfall'},
+    'rxa':    {'var_name': 'rxa',    'units': 'mm',      'long_name': 'Maximum daily annual rainfall'},
+    'sdii':   {'var_name': 'sdii',   'units': 'mm/day',   'long_name': 'Simple daily intensity index'},
+    'spr':    {'var_name': 'spr',    'units': 'Zsr',     'long_name': "Spearman's Rho statistics (Zsr)"},
+    'sse':    {'var_name': 'sse',    'units': 'Slope',   'long_name': "Sen's slope estimates"},
+    'sstr':   {'var_name': 'sstr',   'units': '%',       'long_name': 'Magnitude of trend'},
+    # Drought indices (scale='M')
+    'spi':    {'var_name': 'spi',    'units': '',         'long_name': 'Standardized Precipitation Index'},
+    'spei':   {'var_name': 'spei',   'units': '',         'long_name': 'Standardized Precipitation Evapotranspiration Index'},
 }
