@@ -223,6 +223,93 @@ class IMD(Compute):
 
         return xr_da
 
+    def spatial_mean(self, weighted=True):
+        """
+        Compute area-weighted spatial mean, returning a time series.
+
+        Reduces the spatial dimensions to a single value per timestep
+        using cosine-latitude weighting.  Respects land_mask and NaN
+        values — ocean, boundary, and masked cells are excluded.
+
+        Works on both raw (daily) and computed data.
+
+        Parameters
+        ----------
+        weighted : bool, default True
+            If True, weight each cell by cos(latitude) to correct for
+            meridian convergence.  If False, use arithmetic mean.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Single column named after self.var_name, with DatetimeIndex
+            matching the time axis that get_xarray() would produce.
+
+        Examples
+        --------
+        >>> data = imd.open_data('rain', 2010, 2020, 'yearwise')
+        >>> data.clip('basin.shp')
+        >>> ts = data.spatial_mean()
+
+        >>> data = imd.open_data('rain', 1991, 2020, 'yearwise')
+        >>> ts = data.compute('spi', 'M', timescale=3).spatial_mean()
+        """
+        # --- Prepare data: replace sentinels with NaN ---
+        work_data = self.data.copy()
+        if not self.computed:
+            if self.cat in ('rain', 'rain_gpm'):
+                work_data[work_data == -999.0] = np.nan
+            else:
+                work_data[work_data == self.data[0, 0, 0]] = np.nan
+
+        # Apply land_mask (excludes ocean + boundary artefacts)
+        if self.land_mask is not None:
+            work_data[:, ~self.land_mask] = np.nan
+
+        # --- Build weight matrix: shape (lon_size, lat_size) ---
+        if weighted:
+            cos_lat = np.cos(np.deg2rad(self.lat_array))
+            weights = np.broadcast_to(
+                cos_lat, (len(self.lon_array), len(self.lat_array))).copy()
+        else:
+            weights = np.ones((len(self.lon_array), len(self.lat_array)))
+
+        # --- Weighted spatial mean per timestep ---
+        n_time = work_data.shape[0]
+        result = np.empty(n_time, dtype=np.float64)
+
+        for t in range(n_time):
+            slab = work_data[t, :, :]
+            valid = ~np.isnan(slab)
+            if not valid.any():
+                result[t] = np.nan
+            else:
+                w = weights[valid]
+                result[t] = np.sum(slab[valid] * w) / np.sum(w)
+
+        # --- Build DatetimeIndex (same logic as get_xarray) ---
+        if self.computed:
+            if self.scale == 'A':
+                time_index = pd.date_range(
+                    self.start_day, periods=n_time, freq='YE')
+            elif self.scale == 'climatology':
+                time_index = pd.date_range(
+                    '2000-01-01', periods=12, freq='ME')
+            elif self.scale == 'anomaly':
+                time_index = pd.date_range(
+                    self.start_day, periods=n_time, freq='ME')
+            elif self.scale == 'daily':
+                time_index = pd.date_range(
+                    self.start_day, periods=n_time)
+            elif self.scale == 'M':
+                time_index = pd.date_range(
+                    self.start_day, periods=n_time, freq='ME')
+        else:
+            time_index = pd.date_range(self.start_day, periods=self.no_days)
+
+        return pd.DataFrame(result, index=time_index,
+                            columns=[self.var_name])
+
     def to_netcdf(self, file_name=None, out_dir=None):
 
         if file_name is None:
