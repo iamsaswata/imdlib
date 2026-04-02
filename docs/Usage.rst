@@ -410,3 +410,42 @@ SPEI
     tmax = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
     tmin = imd.open_data('tmin', 1991, 2020, 'yearwise', file_dir)
     spei3 = rain.compute('spei', 'M', timescale=3, tmax=tmax, tmin=tmin)
+
+
+Spatial Mean
+============
+
+Compute area-weighted spatial mean to get a single time series from gridded data.
+Uses cosine-latitude weighting to correct for meridian convergence
+(grid cells at higher latitudes are narrower). Respects ``land_mask`` —
+ocean and boundary cells are excluded automatically.
+
+Returns a ``pandas.DataFrame`` with a ``DatetimeIndex``.
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # Basin-averaged daily rainfall
+    data = imd.open_data('rain', 2010, 2020, 'yearwise', file_dir)
+    data.clip('godavari_basin.shp')
+    ts = data.spatial_mean()
+    # ts is a pandas DataFrame, shape (4018, 1), column 'rain'
+
+Works on any computed output:
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # District-averaged SPI-3
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    data.clip('nashik_district.shp')
+    ts = data.compute('spi', 'M', timescale=3).spatial_mean()
+
+    # All-India climatological monthly mean
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    ts = data.climatology().spatial_mean()
+
+    # Unweighted mean (for small catchments where distortion is negligible)
+    ts = data.spatial_mean(weighted=False)
