@@ -359,3 +359,54 @@ Custom normal period
     # Normal period can be outside loaded data (will download if needed)
     data = imd.open_data('tmax', 2018, 2020, 'yearwise', file_dir)
     hw = data.heatwave(output='annual', norm_start=1991, norm_end=2020)
+
+
+SPI & SPEI
+==========
+
+Compute Standardized Precipitation Index (SPI) and Standardized Precipitation
+Evapotranspiration Index (SPEI) for drought monitoring.
+
+- **SPI** uses rainfall only. Gamma distribution with MLE (McKee 1993, WMO standard).
+- **SPEI** uses rainfall + temperature. Generalized logistic distribution with L-moments
+  (Vicente-Serrano 2010). PET computed via Hargreaves-Samani from tmax/tmin.
+- ``timescale``: accumulation window in months (1, 3, 6, 12, 24, etc.)
+- Output: monthly values, approximately standard normal N(0,1).
+- Requires at least 10 years of data.
+
+**Drought classification:**
+
+- SPI/SPEI <= -2.0: Extremely dry
+- SPI/SPEI -1.5 to -2.0: Severely dry
+- SPI/SPEI -1.0 to -1.5: Moderately dry
+- SPI/SPEI -1.0 to +1.0: Near normal
+- SPI/SPEI >= +2.0: Extremely wet
+
+SPI
+---
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # SPI-3 (3-month accumulation)
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    spi3 = data.compute('spi', 'M', timescale=3)
+    # spi3.data.shape: (360, 135, 129) — monthly SPI values
+
+    # SPI-12 (hydrological drought)
+    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    spi12 = data.compute('spi', 'M', timescale=12)
+
+SPEI
+----
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    # SPEI-3 requires rainfall, tmax, and tmin
+    rain = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    tmax = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    tmin = imd.open_data('tmin', 1991, 2020, 'yearwise', file_dir)
+    spei3 = rain.compute('spei', 'M', timescale=3, tmax=tmax, tmin=tmin)

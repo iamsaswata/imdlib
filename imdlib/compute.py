@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from scipy.stats import norm, rankdata
 import imdlib
+from imdlib.drought import spi, spei
 
 
 class Compute(object):
@@ -28,7 +29,9 @@ class Compute(object):
             except TypeError:
                 raise Exception('{} method is not found'.format(method))
         elif scale == 'M':
-            raise Exception('Monthly scale is not implemented yet')
+            if method not in func_mon_dict:
+                raise Exception('{} method is not available for monthly scale'.format(method))
+            return func_mon_dict[method](self, **kwargs)
         else:
             raise Exception('Called temporal scale is not defined')
 
@@ -1237,4 +1240,11 @@ func_anu_dict = {
     "spr": anu_trend,
     "sse": anu_trend,
     "sstr": anu_trend
+    }
+
+# Dictionary of functions for monthly scale
+
+func_mon_dict = {
+    "spi": spi,
+    "spei": spei,
     }
