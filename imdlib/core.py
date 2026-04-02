@@ -173,6 +173,8 @@ class IMD(Compute):
                 time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='ME')
             elif self.scale == 'daily':
                 time = pd.date_range(self.start_day, periods=self.data.shape[0])
+            elif self.scale == 'M':
+                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='ME')
         else:
             time = pd.date_range(self.start_day, periods=self.no_days)
         time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
