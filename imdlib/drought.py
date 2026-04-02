@@ -387,6 +387,8 @@ def spi(imd_obj, **kwargs):
     imd_obj.data = spi_data
     imd_obj.computed = True
     imd_obj.scale = 'M'
+    imd_obj.var_long_name = 'Standardized Precipitation Index (SPI-{})'.format(
+        timescale)
 
     return imd_obj
 
@@ -548,5 +550,8 @@ def spei(imd_obj, **kwargs):
     imd_obj.data = spei_data
     imd_obj.computed = True
     imd_obj.scale = 'M'
+    imd_obj.var_long_name = (
+        'Standardized Precipitation Evapotranspiration Index (SPEI-{})'
+        .format(timescale))
 
     return imd_obj
