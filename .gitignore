@@ -48,4 +48,8 @@ miniconda.sh
 *.GRD
 
 # Images
-*.png
+*.pngdocs/api/
+
+# Doc api
+docs/api/
+docs/_build/
