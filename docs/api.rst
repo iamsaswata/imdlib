@@ -16,3 +16,9 @@ Top-level functions
 
 .. automodapi:: imdlib.compute
     :no-inheritance-diagram:    
+
+.. automodapi:: imdlib.drought
+    :no-inheritance-diagram:
+
+.. automodapi:: imdlib.extreme
+    :no-inheritance-diagram:

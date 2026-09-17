@@ -1,2 +1,3 @@
 sphinx-automodapi
-imdlib
+sphinx
+sphinx_rtd_theme
