@@ -39,10 +39,13 @@ Department (IMD). For more information about the IMD datasets, the link of
 Citation
 --------
 
-If you are using imdlib and would like to cite it in academic publication, we recommend to use the zenodo DOI:
+If you use IMDLIB in an academic publication, please cite:
 
-    .. image:: https://zenodo.org/badge/235463327.svg
-       :target: https://doi.org/10.5281/zenodo.4405233
+Nandi, S., Patel, P., and Swain, S. (2024). IMDLIB: An open-source library
+for retrieval, processing and spatiotemporal exploratory assessments of
+gridded meteorological observation datasets over India.
+*Environmental Modelling and Software*, 171, 105869.
+`DOI <https://doi.org/10.1016/j.envsoft.2023.105869>`__
 
 About
 -----
@@ -55,8 +58,6 @@ About
         :target: https://badge.fury.io/py/imdlib
     .. image:: https://anaconda.org/iamsaswata/imdlib/badges/version.svg
         :target: https://anaconda.org/iamsaswata/imdlib
-    .. image:: https://zenodo.org/badge/235463327.svg
-        :target: https://doi.org/10.5281/zenodo.4405233       
 
 :Documentation:
     .. image:: https://readthedocs.org/projects/imdlib/badge/?version=stable
