@@ -286,18 +286,56 @@ def spi(imd_obj, **kwargs):
     """
     Compute Standardized Precipitation Index (SPI).
 
-    Uses gamma distribution with MLE (Thom 1958) per grid cell per
-    calendar month. Handles zero-precipitation via mixed distribution.
-
-    Parameters (via kwargs)
+    Parameters
     ----------
-    timescale : int, accumulation window in months (default: 3)
-    cal_start : int, optional calibration period start year
-    cal_end : int, optional calibration period end year
+    imd_obj : IMD
+        Daily rainfall data. Modified in place; use a copy to retain rainfall.
+    **kwargs
+        Options listed below, passed by keyword.
+
+    Other Parameters
+    ----------------
+    timescale : int, optional
+        Accumulation window in months; default is 3.
+    cal_start, cal_end : int, optional
+        Inclusive calibration years within the loaded record. Defaults to the
+        full record. At least 10 years of data and calibration are required.
 
     Returns
     -------
-    IMD object with SPI values, shape (N_months, lon, lat)
+    IMD
+        The input rainfall object with monthly index values, shape
+        (N_months, lon, lat). Initial months without a complete accumulation
+        window and cells with insufficient fitting samples are NaN.
+
+    Notes
+    -----
+    SPI fits a gamma distribution using the Thom (1958) maximum-likelihood
+    approximation, separately for each grid cell and calendar month. A mixed
+    probability distribution accounts for zero precipitation before conversion
+    to standard-normal values. Each fit needs at least 10 positive calibration
+    samples; an insufficient or failed fit produces NaN.
+
+    References
+    ----------
+    * McKee et al. (1993), 8th Conference on Applied Climatology, AMS.
+    * WMO (2012), Standardized Precipitation Index User Guide, WMO-No. 1090.
+    * Thom (1958), Monthly Weather Review, 86, 117-122.
+
+    Examples
+    --------
+    Read previously downloaded yearwise files from ``./data``. These examples
+    require the complete daily records for the years shown.
+
+    >>> import imdlib as imd
+    >>> rain = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir='./data')
+    >>> result = rain.copy()
+    >>> result.compute('spi', 'M', timescale=3, cal_start=1991, cal_end=2020)
+    >>> monthly_index = result.get_xarray()
+
+    Use :meth:`imdlib.IMD.compute` for automatic variable metadata. Calling
+    this lower-level function directly modifies data but does not set all
+    export metadata.
     """
     from datetime import datetime
 
@@ -401,20 +439,64 @@ def spei(imd_obj, **kwargs):
     """
     Compute Standardized Precipitation Evapotranspiration Index (SPEI).
 
-    Uses log-logistic distribution with unbiased PWMs per grid cell per
-    calendar month. PET computed via Hargreaves-Samani from tmax/tmin.
-
-    Parameters (via kwargs)
+    Parameters
     ----------
-    timescale : int, accumulation window in months (default: 3)
-    tmax : IMD object with tmax data (required)
-    tmin : IMD object with tmin data (required)
-    cal_start : int, optional calibration period start year
-    cal_end : int, optional calibration period end year
+    imd_obj : IMD
+        Daily rainfall data. Modified in place; use a copy to retain rainfall.
+    **kwargs
+        Options listed below, passed by keyword.
+
+    Other Parameters
+    ----------------
+    timescale : int, optional
+        Accumulation window in months; default is 3.
+    cal_start, cal_end : int, optional
+        Inclusive calibration years within the loaded record. Defaults to the
+        full record. At least 10 years of data and calibration are required.
+    tmax, tmin : IMD
+        Required daily maximum and minimum temperature objects, covering the
+        same dates as rainfall. Use the native IMD temperature grids.
 
     Returns
     -------
-    IMD object with SPEI values, shape (N_months, lon, lat)
+    IMD
+        The input rainfall object with monthly index values, shape
+        (N_months, lon, lat). Initial months without a complete accumulation
+        window and cells with insufficient fitting samples are NaN.
+
+    Notes
+    -----
+    SPEI fits a three-parameter log-logistic distribution using unbiased
+    probability-weighted moments (PWMs), separately for each grid cell and
+    calendar month. The accumulated variable is precipitation minus potential
+    evapotranspiration (PET). Hargreaves-Samani PET uses monthly temperature
+    and latitude; it is remapped from the 1-degree temperature grid to the
+    0.25-degree rainfall grid. Cells outside PET coverage remain NaN.
+
+    References
+    ----------
+    * Vicente-Serrano et al. (2010), Journal of Climate, 23, 1696-1718.
+    * Begueria et al. (2014), International Journal of Climatology, 34, 3001-3023.
+    * Hosking (1990), Journal of the Royal Statistical Society B, 52, 105-124.
+    * Hargreaves and Samani (1985), Applied Engineering in Agriculture, 1(2), 96-99.
+
+    Examples
+    --------
+    Read previously downloaded yearwise files from ``./data``. These examples
+    require the complete daily records for the years shown.
+
+    >>> import imdlib as imd
+    >>> rain = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir='./data')
+    >>> tmax = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir='./data')
+    >>> tmin = imd.open_data('tmin', 1991, 2020, 'yearwise', file_dir='./data')
+    >>> result = rain.copy()
+    >>> result.compute('spei', 'M', timescale=3, tmax=tmax, tmin=tmin,
+    ...                cal_start=1991, cal_end=2020)
+    >>> monthly_index = result.get_xarray()
+
+    Use :meth:`imdlib.IMD.compute` for automatic variable metadata. Calling
+    this lower-level function directly modifies data but does not set all
+    export metadata.
     """
     from datetime import datetime
     from imdlib.core import IMD

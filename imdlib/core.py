@@ -350,24 +350,60 @@ class IMD(Compute):
             
     def compute(self, method=None, scale=None, **kwargs) -> Compute:
         """
-        Function for computing climat indices.
+        Compute climate indices, trends or drought indices in place.
 
-        It's easiest to use IMD_object.compute(...) to use Compute.
+        Supports annual rainfall and temperature indices, trend calculations,
+        and monthly SPI/SPEI drought indices.
 
         Parameters
         ----------
-        obj : IMD
-
         method : str
-            Details in imdlib.core.naming module
-
-        scale : str
-           'A' -> Annual
+            For annual climate indices, use identifiers such as ``'d64'``
+            (heavy precipitation days), ``'cdd'`` (consecutive dry days),
+            or ``'dtr'`` (diurnal temperature range).
+            Annual trend options include ``'mmk_hr'``, ``'spr'``, ``'sse'``
+            and ``'sstr'``. See :ref:`climate-indices` for the index list.
+            Use ``'spi'`` or ``'spei'`` for monthly drought indices.
+        scale : {'A', 'M'}
+            Use ``'A'`` for annual climate indices and trend calculations,
+            or ``'M'`` for SPI and SPEI.
+        **kwargs
+            Options passed to the selected index function, such as ``threshold``
+            or ``timescale``. SPEI also requires ``tmax`` and ``tmin`` objects.
 
         Returns
         -------
-        IMD object
-            Modified IMD object with computed climatic indices
+        IMD
+            This object with computed values and updated export metadata.
+            Use ``data.copy().compute(...)`` to preserve the original data.
+
+        See Also
+        --------
+        imdlib.compute.d64 : Annual heavy precipitation days.
+        imdlib.compute.cdd : Annual consecutive dry days.
+        imdlib.compute.dtr_anu : Annual mean diurnal temperature range.
+        imdlib.compute.anu_trend : Trend analysis of annual values.
+        imdlib.drought.spi : SPI parameters, methodology, references and examples.
+        imdlib.drought.spei : SPEI parameters, methodology, references and examples.
+
+        Examples
+        --------
+        Using previously downloaded daily yearwise rainfall files:
+
+        >>> import imdlib as imd
+        >>> rain = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir='./data')
+
+        Annual heavy precipitation days (64.5 mm threshold):
+
+        >>> heavy_days = rain.copy().compute('d64', 'A', threshold=64.5)
+
+        Annual longest dry spell (default 1.0 mm threshold):
+
+        >>> dry_days = rain.copy().compute('cdd', 'A')
+
+        Monthly three-month SPI:
+
+        >>> spi3 = rain.copy().compute('spi', 'M', timescale=3)
         """
 
         # method must be set before dispatch (anu_trend reads it);
@@ -592,10 +628,73 @@ class IMD(Compute):
         IMD object
             Modified IMD object with heat wave classification
 
+        Notes
+        -----
+        The input object is modified in place. Use a copy to retain temperatures.
+        Daily classification uses the bundled 1-degree terrain mask and a
+        15-day circular running mean of day-of-year climatological normals.
+        With at least 30 loaded years, the default normal period is the entire
+        record. Otherwise supply both normal years (at least 10 years).
+        If that period is outside the loaded record, the implementation downloads
+        its temperature data separately.
+
+        .. list-table:: Region classification in the terrain mask
+           :header-rows: 1
+           :widths: 20 80
+
+           * - Code
+             - Region
+           * - -1
+             - Ocean / no data
+           * - 0
+             - Plains
+           * - 1
+             - Hilly
+           * - 2
+             - Coastal
+
+        The table describes the thresholds implemented by IMDLIB. The terrain
+        entry threshold must be met before either classification criterion is
+        applied; the more severe category takes precedence.
+
+        .. list-table:: Classification criteria (degrees Celsius)
+           :header-rows: 1
+           :widths: 28 36 36
+
+           * - Criterion
+             - Event
+             - Severe event
+           * - Terrain entry threshold
+             - Tmax >= 40 (plains), >= 30 (hilly), >= 37 (coastal)
+             - Same entry thresholds
+           * - Departure from normal (all terrain)
+             - 4.5 <= departure <= 6.4
+             - Departure > 6.4
+           * - Absolute Tmax (plains and hilly)
+             - 45 <= Tmax < 47
+             - Tmax >= 47
+
+        These outputs classify individual grid-cell days. Annual output counts
+        days, not the number of multi-day episodes; the implementation does not
+        apply a station-count or consecutive-day declaration rule.
+
+        References
+        ----------
+        * `IMD Heat/Cold Wave FAQ <https://mausam.imd.gov.in/pdfs/heatcolduser/faq.pdf>`_.
+        * Mandal et al. (2022), Scientific Reports,
+          `doi:10.1038/s41598-022-24065-0 <https://doi.org/10.1038/s41598-022-24065-0>`_.
+
         Examples
         --------
-        >>> data = imd.open_data('tmax', 1991, 2020, 'yearwise')
-        >>> hw = data.heatwave(output='annual', count='total')
+        Read previously downloaded yearwise temperature files from ``./data``.
+        Use separate copies for daily classes and annual counts.
+
+        >>> import imdlib as imd
+        >>> data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir='./data')
+        >>> daily = data.copy().heatwave(output='daily')
+        >>> annual = data.copy().heatwave(output='annual', count='total')
+        >>> severe = data.copy().heatwave(output='annual', count='severe')
+        >>> annual_days = annual.get_xarray()
         """
         from imdlib.extreme import _detect_events
         result = _detect_events(self, 'heatwave', output, count,
@@ -644,10 +743,73 @@ class IMD(Compute):
         IMD object
             Modified IMD object with cold wave classification
 
+        Notes
+        -----
+        The input object is modified in place. Use a copy to retain temperatures.
+        Daily classification uses the bundled 1-degree terrain mask and a
+        15-day circular running mean of day-of-year climatological normals.
+        With at least 30 loaded years, the default normal period is the entire
+        record. Otherwise supply both normal years (at least 10 years).
+        If that period is outside the loaded record, the implementation downloads
+        its temperature data separately.
+
+        .. list-table:: Region classification in the terrain mask
+           :header-rows: 1
+           :widths: 20 80
+
+           * - Code
+             - Region
+           * - -1
+             - Ocean / no data
+           * - 0
+             - Plains
+           * - 1
+             - Hilly
+           * - 2
+             - Coastal
+
+        The table describes the thresholds implemented by IMDLIB. The terrain
+        entry threshold must be met before either classification criterion is
+        applied; the more severe category takes precedence.
+
+        .. list-table:: Classification criteria (degrees Celsius)
+           :header-rows: 1
+           :widths: 28 36 36
+
+           * - Criterion
+             - Event
+             - Severe event
+           * - Terrain entry threshold
+             - Tmin <= 10 (plains), <= 0 (hilly), <= 15 (coastal)
+             - Same entry thresholds
+           * - Departure from normal (all terrain)
+             - -6.4 < departure <= -4.5
+             - Departure <= -6.4
+           * - Absolute Tmin (plains only)
+             - 2 < Tmin <= 4
+             - Tmin <= 2
+
+        These outputs classify individual grid-cell days. Annual output counts
+        days, not the number of multi-day episodes; the implementation does not
+        apply a station-count or consecutive-day declaration rule.
+
+        References
+        ----------
+        * `IMD Heat/Cold Wave FAQ <https://mausam.imd.gov.in/pdfs/heatcolduser/faq.pdf>`_.
+        * Mandal et al. (2022), Scientific Reports,
+          `doi:10.1038/s41598-022-24065-0 <https://doi.org/10.1038/s41598-022-24065-0>`_.
+
         Examples
         --------
-        >>> data = imd.open_data('tmin', 1991, 2020, 'yearwise')
-        >>> cw = data.coldwave(output='annual', count='total')
+        Read previously downloaded yearwise temperature files from ``./data``.
+        Use separate copies for daily classes and annual counts.
+
+        >>> import imdlib as imd
+        >>> data = imd.open_data('tmin', 1991, 2020, 'yearwise', file_dir='./data')
+        >>> daily = data.copy().coldwave(output='daily')
+        >>> annual = data.copy().coldwave(output='annual', count='total')
+        >>> severe = data.copy().coldwave(output='annual', count='severe')
+        >>> annual_days = annual.get_xarray()
         """
         from imdlib.extreme import _detect_events
         result = _detect_events(self, 'coldwave', output, count,
