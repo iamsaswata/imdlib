@@ -27,10 +27,17 @@ author = 'Saswata Nandi, Pratiman Patel and Sabyasachi Swain'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx_rtd_theme',
-              'sphinx_automodapi.automodapi',
-              'sphinx_automodapi.smart_resolver'
-              ]
+# Import this checkout, so local and hosted builds document the same source.
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+extensions = ['sphinx_rtd_theme', 'sphinx.ext.autodoc',
+              'sphinx.ext.autosummary', 'sphinx.ext.napoleon']
+autosummary_generate = True
+napoleon_numpy_docstring = True
+napoleon_google_docstring = False
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -51,5 +58,5 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
 html_extra_path = ["_html"]
