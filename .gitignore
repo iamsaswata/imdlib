@@ -53,3 +53,6 @@ miniconda.sh
 # Doc api
 docs/api/
 docs/_build/
+
+# Sphinx autosummary pages are generated from docs/api.rst.
+docs/reference/
