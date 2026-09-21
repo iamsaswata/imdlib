@@ -1,7 +1,7 @@
 certifi
 matplotlib
 numpy
-pandas
+pandas>=2.2
 python-dateutil
 pytz
 scipy
