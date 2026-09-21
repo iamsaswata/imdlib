@@ -46,7 +46,7 @@ array=( 3.10 )
 echo "Building conda package ..."
 cd ~
 echo $PWD
-conda skeleton pypi $pkg --python-version 3.6
+conda skeleton pypi $pkg --python-version 3.10
 cd $pkg
 echo $PWD
 cd ~
