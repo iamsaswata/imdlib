@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'IMDLIB'
-copyright = '2022, Saswata Nandi, Pratiman Patel and Sabyasachi Swain'
+copyright = '2026, Saswata Nandi, Pratiman Patel and Sabyasachi Swain'
 author = 'Saswata Nandi, Pratiman Patel and Sabyasachi Swain'
 
 
