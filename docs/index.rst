@@ -56,8 +56,8 @@ About
 :Status:
     .. image:: https://badge.fury.io/py/imdlib.svg
         :target: https://badge.fury.io/py/imdlib
-    .. image:: https://anaconda.org/iamsaswata/imdlib/badges/version.svg
-        :target: https://anaconda.org/iamsaswata/imdlib
+    .. image:: https://anaconda.org/conda-forge/imdlib/badges/version.svg
+        :target: https://anaconda.org/conda-forge/imdlib
 
 :Documentation:
     .. image:: https://readthedocs.org/projects/imdlib/badge/?version=stable
