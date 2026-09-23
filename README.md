@@ -2,7 +2,7 @@
 [![Build Status](https://github.com/iamsaswata/imdlib/actions/workflows/pypi.yml/badge.svg)](https://github.com/iamsaswata/imdlib/actions/workflows/pypi.yml)
 ![GitHub](https://img.shields.io/github/license/iamsaswata/imdlib)
 ![PyPI](https://img.shields.io/pypi/v/imdlib)
-![Conda](https://img.shields.io/conda/v/iamsaswata/imdlib)
+[![Conda-forge](https://img.shields.io/conda/v/conda-forge/imdlib)](https://anaconda.org/conda-forge/imdlib)
 [![Downloads](https://pepy.tech/badge/imdlib)](https://pepy.tech/project/imdlib)
 
 
@@ -13,6 +13,10 @@ This is a python package to download and handle binary grided data from Indian M
 > pip install imdlib
  
  or
+
+> conda install -c conda-forge imdlib
+
+or
 
 > conda install -c iamsaswata imdlib
 
