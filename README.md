@@ -14,6 +14,10 @@ This is a python package to download and handle binary grided data from Indian M
  
  or
 
+> conda install -c conda-forge imdlib
+
+or
+
 > conda install -c iamsaswata imdlib
 
 or 
