@@ -14,6 +14,12 @@ We recommend ‘Conda’  to install IMDLIB.
 
 .. code-block:: bash
 
+    conda install -c conda-forge imdlib
+
+Alternatively, install from the iamsaswata channel:
+
+.. code-block:: bash
+
     conda install -c iamsaswata imdlib
 
 Installation using pip:
