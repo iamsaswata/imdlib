@@ -1,6 +1,26 @@
 API reference
 =============
 
+Load data
+---------
+
+.. autosummary::
+   :toctree: reference
+
+   imdlib.load
+
+Cache
+-----
+
+.. autosummary::
+   :toctree: reference
+
+   imdlib.cache.info
+   imdlib.cache.clear
+   imdlib.cache.set_dir
+   imdlib.cache.get_dir
+   imdlib.cache.unlock
+
 Download and read data
 ----------------------
 

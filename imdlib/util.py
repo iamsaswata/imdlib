@@ -1,7 +1,90 @@
+import os
 import numpy as np
 import pandas as pd
 from datetime import date
 from pathlib import Path
+
+
+# IMD download endpoints: (url, POST field name)
+ARCHIVE_URLS = {
+    'rain': ('https://imdpune.gov.in/cmpg/Griddata/rainfall.php', 'rain'),
+    'tmax': ('https://imdpune.gov.in/cmpg/Griddata/maxtemp.php', 'maxtemp'),
+    'tmin': ('https://imdpune.gov.in/cmpg/Griddata/mintemp.php', 'mintemp'),
+}
+REALTIME_URLS = {
+    'rain': ('https://imdpune.gov.in/cmpg/Realtimedata/Rainfall/rain.php', 'rain'),
+    'rain_gpm': ('https://www.imdpune.gov.in/cmpg/Realtimedata/gpm/rain.php', 'rain'),
+    'tmax': ('https://imdpune.gov.in/cmpg/Realtimedata/max/max.php', 'max'),
+    'tmin': ('https://imdpune.gov.in/cmpg/Realtimedata/min/min.php', 'min'),
+}
+
+# Grid size (n_lat, n_lon) of the binary files
+ARCHIVE_GRIDS = {'rain': (129, 135), 'tmin': (31, 31), 'tmax': (31, 31)}
+REALTIME_GRIDS = {'rain': (129, 135), 'rain_gpm': (281, 241),
+                  'tmin': (61, 61), 'tmax': (61, 61)}
+
+
+class DataNotAvailableError(Exception):
+    """IMD has no file for the requested period (not published yet or outside
+    the period covered by the server). The server signals this with an empty file."""
+
+
+class DownloadError(Exception):
+    """A download failed, or the file received has the wrong size."""
+
+
+def check_download_size(nbytes, expected, what, empty_msg=None):
+    """
+    Validate the byte size of a downloaded .grd file.
+
+    An empty reply means IMD has no data for the period (HTTP 200 with
+    0 bytes); any other size that is not exactly ``expected`` is a
+    corrupt or truncated download.
+
+    Raises DataNotAvailableError or DownloadError.
+    """
+    if nbytes == 0:
+        if empty_msg is None:
+            empty_msg = ("{} is not available from IMD (the server returned an "
+                         "empty file). Nothing was saved.".format(what))
+        raise DataNotAvailableError(empty_msg)
+    if nbytes != expected:
+        raise DownloadError(
+            "Download of {} is incomplete or corrupt: received {:,} bytes, "
+            "expected exactly {:,}. Nothing was saved.".format(what, nbytes, expected))
+
+
+def save_download(content, fname, expected, what, empty_msg=None):
+    """
+    Write downloaded bytes to ``fname`` only if their size is exactly
+    ``expected``. The data is written to ``<fname>.part`` first and then
+    renamed, so an interrupted write never leaves a partial file behind.
+    """
+    check_download_size(len(content), expected, what, empty_msg)
+    part = str(fname) + '.part'
+    try:
+        with open(part, 'wb') as f:
+            f.write(content)
+        os.replace(part, fname)
+    except BaseException:
+        if os.path.exists(part):
+            os.remove(part)
+        raise
+
+
+def read_grd(fname, days, nlat, nlon):
+    """
+    Read an IMD binary (.grd) file of little-endian float32 values stored
+    as (days, lat, lon) in C order.
+
+    Returns a float32 array of shape (days, lon, lat).
+    """
+    data = np.fromfile(fname, dtype='<f4')
+    # Check consistency of data points
+    if data.size != days * nlat * nlon:
+        raise Exception("Error in file reading,"
+                        "mismatch in size of data-length")
+    return np.transpose(data.reshape(days, nlat, nlon), (0, 2, 1))
 
 
 def parse_date_input(start, end=None):

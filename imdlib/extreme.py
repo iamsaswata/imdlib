@@ -147,7 +147,8 @@ def _detect_events(imd_obj, event_type, output, count, norm_start, norm_end):
 
     # --- Compute daily normals ---
     # If norm period is within loaded data, use it directly.
-    # Otherwise, load the norm period data separately.
+    # Otherwise, load the norm period data separately through the cache.
+    # Errors from load() (e.g. DataNotAvailableError, DownloadError) propagate.
     norm_within_data = (norm_start >= data_start_yr and norm_end <= data_end_yr)
 
     if norm_within_data:
@@ -155,9 +156,8 @@ def _detect_events(imd_obj, event_type, output, count, norm_start, norm_end):
         norm_start_day = imd_obj.start_day
         norm_no_days = imd_obj.no_days
     else:
-        from imdlib.core import get_data
-        norm_obj = get_data(imd_obj.cat, norm_start, norm_end,
-                            fn_format='yearwise')
+        from imdlib.loader import load
+        norm_obj = load(imd_obj.cat, norm_start, norm_end)
         norm_data = norm_obj.data.copy()
         norm_data[norm_data == norm_obj.data[0, 0, 0]] = np.nan
         norm_start_day = norm_obj.start_day

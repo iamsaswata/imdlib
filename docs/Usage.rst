@@ -1,73 +1,124 @@
-Downloading
-===========
+Getting data
+============
 
-IMDLIB is capable of downloading gridded rainfall and temperature (minimum and maximum) data. Here is an example of downloading rainfall data from 2010 to 2018:
+load()
+------
+
+``imdlib.load()`` downloads IMD gridded data, keeps the files in a local cache and returns an
+``IMD class object``. Loading the same period again does not need a new download, as it uses
+the earlier downloads.
 
 .. code-block:: python
 
     import imdlib as imd
 
-    start_yr = 2010
-    end_yr = 2018
-    variable = 'rain' # other options are ('tmin'/ 'tmax')
-    data = imd.get_data(variable, start_yr, end_yr, fn_format='yearwise')
+    data = imd.load('rain', 2010, 2018)  # other options are ('tmin'/ 'tmax')
 
-Output
-------
+    # Part of a year, given as 'YYYY-MM-DD'
+    tmax = imd.load('tmax', '2023-04-01', '2023-06-30')
+
+Only files that are not in the cache are downloaded, one at a time. For each file, a line
+first shows ``waiting for IMD server`` with the elapsed time, then a progress bar:
 
 .. code-block:: text
 
-    Downloading: rain for year 2010
-    Downloading: rain for year 2011
-    Downloading: rain for year 2012
-    Downloading: rain for year 2013
-    Downloading: rain for year 2014
-    Downloading: rain for year 2015
-    Downloading: rain for year 2016
-    Downloading: rain for year 2017
-    Downloading: rain for year 2018
-    Download Successful !!!
+    Downloading 1 file from IMD into /home/user/.cache/imdlib
+    tmax 2023  ████████████████████████  1.4 / 1.4 MB  38s
 
-The output is saved in the current working directory. If you want to save the files to a different directory, then you can use the following code:
+Use ``progress=False`` to turn the output off.
+
+- Each file is checked for its complete size before it is stored, so the cache never holds an
+  incomplete download. Failed connections are retried automatically. If a download still fails,
+  an error is raised. Files downloaded before the error stay in the cache, so running the same
+  call again continues where it stopped.
+
+- The archive contains complete years only. It starts in 1901 for rainfall and in 1951 for
+  temperature. If a requested year is not published yet, an error is raised that suggests an
+  earlier end year. More recent days are available as `Real-time data`_.
+
+- ``offline=True`` never uses the network. If files are missing from the cache, it raises an
+  error that lists them.
+
+- The loaded data is held in memory. For long periods, especially of rainfall, a warning shows
+  the estimated memory needed. If loading fails or is slow, load a shorter period.
+
+Real-time data
+--------------
+
+IMD also publishes provisional daily real-time data for recent days. Rainfall is on the same
+0.25\ :sup:`o`\  grid as the archive; temperature is on a 0.5\ :sup:`o`\  grid (archive: 1.0\ :sup:`o`\ ). ``'rain_gpm'`` gives GPM-based rainfall on a 0.25\ :sup:`o`\  grid
+covering 30\ :sup:`o`\ S-40\ :sup:`o`\ N, 50\ :sup:`o`\ E-110\ :sup:`o`\ E, including the ocean.
 
 .. code-block:: python
 
     import imdlib as imd
 
-    start_yr = 2010
-    end_yr = 2018
-    variable = 'rain' # other options are ('tmin'/ 'tmax')
-    file_dir = (r'C:\Users\imdlib\Desktop\\') #Path to save the files
-    imd.get_data(variable, start_yr, end_yr, fn_format='yearwise', file_dir=file_dir)
+    data = imd.load('rain', '2026-10-01', '2026-10-05', source='realtime')
+    gpm = imd.load('rain_gpm', '2026-10-01', '2026-10-05', source='realtime')
 
-Reading IMD datasets
-====================
+The most recent days may not be published yet; requesting them raises an error that lists the
+missing days and suggests an earlier end date.
 
-One of the major purposes of IMDLIB is to process IMD’s gridded datasets. The original data is available in ``grd`` file format. IMDLIB can read ``grd`` file in ``xarray`` and will create an ``IMD class object``.
+Cache
+-----
+
+The cache is in the user cache directory of your system:
+
+- Linux: ``~/.cache/imdlib`` (or ``$XDG_CACHE_HOME/imdlib``)
+- Windows: ``C:\Users\<name>\AppData\Local\imdlib\Cache``
+- macOS: ``~/Library/Caches/imdlib``
+
+To use another location, pass ``cache_dir=`` to ``load()``, call ``cache.set_dir()``
+once per session, or set the ``IMDLIB_CACHE`` environment variable (in this order of precedence).
 
 .. code-block:: python
 
     import imdlib as imd
 
-    start_yr = 2010
-    end_yr = 2018
-    variable = 'rain' # other options are ('tmin'/ 'tmax')
-    file_dir = (r'C:\Users\imdlib\Desktop\\') #Path to save the files
-    data = imd.open_data(variable, start_yr, end_yr,'yearwise', file_dir)
-    data
+    imd.cache.info()                # location, cached periods, size, download dates
+    imd.cache.clear('rain', 2018)   # remove cached files (prints the space freed)
+    imd.cache.set_dir('D:/imd_cache')
+    imd.cache.unlock()              # if load() waits for a download that is no longer running
 
-.. [*] This step is for reading IMD datasets after they are downloaded. If you have the data already downloaded and stored locally, you can directly use this step to read the datasets.
+``manifest.json`` in the cache directory records the source and checksum (SHA-256) of each
+file, so two copies can be compared. IMD sometimes republishes a year with corrections. To get
+the new version, clear that year and load it again:
 
-Output
-------
+.. code-block:: python
 
-``<imdlib.core.IMD at 0x13e5b3753c8>``
+    imd.cache.clear('rain', 2018)
+    data = imd.load('rain', 2018)
 
-- ``file_dir`` should refer to top-level directory. It should contain 3 sub-directories ``rain``, ``tmin``, and ``tmax``.
+get_data() and open_data()
+--------------------------
 
-- If ``file_dir`` exists without any subdirectory, IMDLIB will look for the files in ``file_dir``. But be careful if you are using ``file_format = ‘yearwise’``, as it will not differentiate between  the datasets, ``2018.grd`` for rainfall and ``2018.grd`` for tmin.
+For most uses, ``load()`` is simpler: it downloads and reads in one call. ``get_data()``
+downloads files under IMD's file names (or as ``<year>.grd``) and reads them; ``open_data()``
+reads such files without downloading, for example files you already have.
+``get_real_data()`` and ``open_real_data()`` do the same for real-time data.
 
-- If ``file_dir`` is not given, it will look for the adatasets from the current directory and its subdirectories.
+.. code-block:: python
+
+    import imdlib as imd
+
+    file_dir = 'data'
+    data = imd.get_data('rain', 2010, 2018, fn_format='yearwise', file_dir=file_dir)
+    data = imd.open_data('rain', 2010, 2018, 'yearwise', file_dir)
+
+    data = imd.get_real_data('rain', '2025-07-01', '2025-07-10', file_dir)
+    data = imd.open_real_data('rain', '2025-07-01', '2025-07-10', file_dir)
+
+- With ``fn_format='yearwise'`` files are saved as ``<file_dir>/rain/2010.grd``; without it,
+  IMD's file names are kept (e.g. ``Rainfall_ind2010_rfp25.grd``).
+
+- If ``file_dir`` is not given, the current working directory is used.
+
+- ``open_data()`` looks in the ``rain``, ``tmin`` or ``tmax`` sub-folder of ``file_dir`` if it
+  exists, otherwise in ``file_dir`` itself. With ``fn_format='yearwise'`` the file names do not
+  include the variable, so keep each variable in its own sub-folder.
+
+- Files already in the folder are skipped. If a year is not published yet, an error is raised
+  and nothing is saved for that year.
 
 Processing
 ==========
@@ -111,18 +162,18 @@ Requires at least one full year of daily data.
     import imdlib as imd
 
     # Monthly climatology — shape: (12, lon, lat)
-    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('rain', 1991, 2020)
     clim = data.climatology()
 
     # Monthly anomaly against own mean — shape: (N_months, lon, lat)
-    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('rain', 1991, 2020)
     anom = data.anomaly()
 
     # Anomaly against a reference period (e.g., 1991-2020 baseline)
-    ref = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    ref = imd.load('rain', 1991, 2020)
     ref_clim = ref.climatology()
 
-    recent = imd.open_data('rain', 2020, 2020, 'yearwise', file_dir)
+    recent = imd.load('rain', 2020, 2020)
     anom = recent.anomaly(ref_clim)
 
 
@@ -149,103 +200,26 @@ Get data for a given location, convert, and save into csv file:
 
     lat = 20.03
     lon = 77.23
-    data.to_csv('test.csv', lat, lon, file_dir)
+    out_dir = 'output'  # existing folder (optional; default: current directory)
+    data.to_csv('test.csv', lat, lon, out_dir)
 
 Save data in netCDF format:
 
 .. code-block:: python
 
-    data.to_netcdf('test.nc', file_dir)
+    data.to_netcdf('test.nc', out_dir)
 
 Save data in GeoTIFF format (if you have rioxarray library):
 
 .. code-block:: python
 
-    data.to_geotiff('test.tif', file_dir)
-
-
-Gridded Data Real Time
-======================
-
-Now IMDLIB can process Gridded (daily) Real Time data (Rainfall at 0.25\ :sup:`o`\  & Temperature at 0.5\ :sup:`o`\  spatial resolution) 
-
-Downloading
------------
-
-The steps are similar to the data downloading and opening of IMD gridded archive data  
-
-An example is presented below.
-
-.. code-block:: python
-
-    import imdlib as imd    
-    start_dy = '2020-01-31'
-    end_dy = '2020-03-05'
-    var_type = 'rain'
-    file_dir='../data'
-    data = imd.get_real_data(var_type, start_dy, end_dy, file_dir)
-
-Output
-------
-
-.. code-block:: text
-
-    Downloading: rain for date 2020-01-31
-    Downloading: rain for date 2020-02-01
-    Downloading: rain for date 2020-02-02
-    Downloading: rain for date 2020-02-03
-    Downloading: rain for date 2020-02-04
-    Downloading: rain for date 2020-02-05
-    Downloading: rain for date 2020-02-06
-    Downloading: rain for date 2020-02-07
-    Downloading: rain for date 2020-02-08
-    Downloading: rain for date 2020-02-09
-    Downloading: rain for date 2020-02-10
-    Downloading: rain for date 2020-02-11
-    Downloading: rain for date 2020-02-12
-    Downloading: rain for date 2020-02-13
-    Downloading: rain for date 2020-02-14
-    Downloading: rain for date 2020-02-15
-    Downloading: rain for date 2020-02-16
-    Downloading: rain for date 2020-02-17
-    Downloading: rain for date 2020-02-18
-    Downloading: rain for date 2020-02-19
-    Downloading: rain for date 2020-02-20
-    Downloading: rain for date 2020-02-21
-    Downloading: rain for date 2020-02-22
-    Downloading: rain for date 2020-02-23
-    Downloading: rain for date 2020-02-24
-    Downloading: rain for date 2020-02-25
-    Downloading: rain for date 2020-02-26
-    Downloading: rain for date 2020-02-27
-    Downloading: rain for date 2020-02-28
-    Downloading: rain for date 2020-02-29
-    Downloading: rain for date 2020-03-01
-    Downloading: rain for date 2020-03-02
-    Downloading: rain for date 2020-03-03
-    Downloading: rain for date 2020-03-04
-    Downloading: rain for date 2020-03-05
-    Download Successful !!!
-
-Reading
--------
-
-If the data is already downloaded. Read the real time gridded data.
-
-.. code-block:: python
-
-    import imdlib as imd    
-    start_dy = '2020-01-31'
-    end_dy = '2020-03-05'
-    var_type = 'rain'
-    file_dir='../data'
-    data = imd.open_real_data(var_type, start_dy, end_dy, file_dir)    
+    data.to_geotiff('test.tif', out_dir)
 
 
 Climate Indices
 ===============
 
-Available cliimate indices are listed in a Table at the reference section of this  documentation. 
+Available climate indices are listed in a Table at the reference section of this  documentation. 
 
 An example of computing heavy precipitation days between year 2015 and 2019 is as follows:
 
@@ -254,7 +228,7 @@ An example of computing heavy precipitation days between year 2015 and 2019 is a
     import imdlib as imd
     start_yr, end_yr = 2015, 2019
     variable = 'rain'
-    rain = imd.get_data(variable, start_yr, end_yr,'yearwise', '../data')
+    rain = imd.load(variable, start_yr, end_yr)
     d64 =  rain.compute('d64', 'A', threshold=64.5)
 
 An example of computing consecutive dry days (longest dry spell) between year 2015 and 2019:
@@ -264,7 +238,7 @@ An example of computing consecutive dry days (longest dry spell) between year 20
     import imdlib as imd
     start_yr, end_yr = 2015, 2019
     variable = 'rain'
-    rain = imd.get_data(variable, start_yr, end_yr, 'yearwise', '../data')
+    rain = imd.load(variable, start_yr, end_yr)
 
     # Using ETCCDI standard threshold (1.0 mm)
     cdd = rain.compute('cdd', 'A')
@@ -300,7 +274,9 @@ with terrain-specific thresholds (plains, hilly, coastal).
 
 - If loaded data spans **>= 30 years**, normals are computed automatically from the full data range.
 - If loaded data spans **< 30 years**, you must provide ``norm_start`` and ``norm_end`` (minimum 10 years).
-- The normal period can extend **outside** the loaded data range — imdlib will automatically download the required data.
+- The normal period can extend **outside** the loaded data range. imdlib then reads the whole normal
+  period with ``load()``: years already in the cache are reused and missing years are downloaded into
+  the cache, not the working directory.
 
 Daily classification
 --------------------
@@ -310,7 +286,7 @@ Daily classification
     import imdlib as imd
 
     # Each cell on each day is classified as 0 (no event), 1 (HW), or 2 (severe HW)
-    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('tmax', 1991, 2020)
     hw = data.heatwave(output='daily')
     # hw.data.shape: (10958, 31, 31) — same as input
 
@@ -322,16 +298,16 @@ Annual counts
     import imdlib as imd
 
     # Total heat wave days per year (HW + severe)
-    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('tmax', 1991, 2020)
     hw = data.heatwave(output='annual', count='total')
     # hw.data.shape: (30, 31, 31) — one value per year
 
     # Only severe heat wave days per year
-    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('tmax', 1991, 2020)
     hw = data.heatwave(output='annual', count='severe')
 
     # Only non-severe heat wave days per year
-    data = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('tmax', 1991, 2020)
     hw = data.heatwave(output='annual', count='hw')
 
 Cold wave detection
@@ -342,7 +318,7 @@ Cold wave detection
     import imdlib as imd
 
     # Same interface as heatwave, but uses tmin
-    data = imd.open_data('tmin', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('tmin', 1991, 2020)
     cw = data.coldwave(output='annual', count='total')
 
 Custom normal period
@@ -353,11 +329,11 @@ Custom normal period
     import imdlib as imd
 
     # For short data ranges, provide the normal period explicitly
-    data = imd.open_data('tmax', 2015, 2020, 'yearwise', file_dir)
-    hw = data.heatwave(output='annual', norm_start=2015, norm_end=2020)
+    data = imd.load('tmax', 2011, 2020)
+    hw = data.heatwave(output='annual', norm_start=2011, norm_end=2020)
 
-    # Normal period can be outside loaded data (will download if needed)
-    data = imd.open_data('tmax', 2018, 2020, 'yearwise', file_dir)
+    # Normal period can be outside loaded data (read from the cache, downloaded if needed)
+    data = imd.load('tmax', 2018, 2020)
     hw = data.heatwave(output='annual', norm_start=1991, norm_end=2020)
 
 
@@ -390,12 +366,12 @@ SPI
     import imdlib as imd
 
     # SPI-3 (3-month accumulation)
-    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('rain', 1991, 2020)
     spi3 = data.compute('spi', 'M', timescale=3)
     # spi3.data.shape: (360, 135, 129) — monthly SPI values
 
     # SPI-12 (hydrological drought)
-    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('rain', 1991, 2020)
     spi12 = data.compute('spi', 'M', timescale=12)
 
 SPEI
@@ -406,9 +382,9 @@ SPEI
     import imdlib as imd
 
     # SPEI-3 requires rainfall, tmax, and tmin
-    rain = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
-    tmax = imd.open_data('tmax', 1991, 2020, 'yearwise', file_dir)
-    tmin = imd.open_data('tmin', 1991, 2020, 'yearwise', file_dir)
+    rain = imd.load('rain', 1991, 2020)
+    tmax = imd.load('tmax', 1991, 2020)
+    tmin = imd.load('tmin', 1991, 2020)
     spei3 = rain.compute('spei', 'M', timescale=3, tmax=tmax, tmin=tmin)
 
 
@@ -427,7 +403,7 @@ Returns a ``pandas.DataFrame`` with a ``DatetimeIndex``.
     import imdlib as imd
 
     # Basin-averaged daily rainfall
-    data = imd.open_data('rain', 2010, 2020, 'yearwise', file_dir)
+    data = imd.load('rain', 2010, 2020)
     data.clip('godavari_basin.shp')
     ts = data.spatial_mean()
     # ts is a pandas DataFrame, shape (4018, 1), column 'rain'
@@ -439,12 +415,12 @@ Works on any computed output:
     import imdlib as imd
 
     # District-averaged SPI-3
-    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('rain', 1991, 2020)
     data.clip('nashik_district.shp')
     ts = data.compute('spi', 'M', timescale=3).spatial_mean()
 
     # All-India climatological monthly mean
-    data = imd.open_data('rain', 1991, 2020, 'yearwise', file_dir)
+    data = imd.load('rain', 1991, 2020)
     ts = data.climatology().spatial_mean()
 
     # Unweighted mean (for small catchments where distortion is negligible)

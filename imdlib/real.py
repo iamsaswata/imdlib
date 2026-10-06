@@ -1,10 +1,10 @@
-import array
 import numpy as np
 import pandas as pd
 import os
 import requests
 from imdlib.core import IMD
 from imdlib.util import get_filename_realtime
+from imdlib.util import REALTIME_GRIDS, REALTIME_URLS, save_download, read_grd
 
 def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
 
@@ -39,6 +39,17 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
     -------
     IMD object
 
+    """
+
+    return _open_realtime(var_type, start_dy, end_dy,
+                          lambda day: get_filename_realtime(day, var_type, file_dir))
+
+
+def _open_realtime(var_type, start_dy, end_dy, fname_of_day):
+    """
+    Read daily real-time files and build an IMD object (shared by
+    ``open_real_data`` and ``load``). ``fname_of_day(day)`` returns the
+    file path for a day (pandas Timestamp).
     """
 
     lat_size_rain = 129
@@ -90,30 +101,12 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
     for day in days:
 
         # Decide resolution of input file name
-        fname = get_filename_realtime(day, var_type, file_dir)
+        fname = fname_of_day(day)
 
-        # temporary variable to read binary data
-        temp = array.array("f")
-        with open(fname, 'rb') as f:
-            temp.fromfile(f, os.stat(fname).st_size // temp.itemsize)
-
-        data = np.array(list(map(lambda x: x, temp)))
-        
-        # Added for new url (dated:Oct 10, 2022)
-        # Removing first element for rain for new url: https://imdpune.gov.in/lrfindex.php 
-        #if var_type == 'rain':
-        #    data = data[1:]
-        
-        nlen = lat_size_class * lon_size_class
-        # Check consistency of data points
-        if len(data) != nlen:
-            raise Exception("Error in file reading,"
-                            "mismatch in size of data-length")
-
-        # Reshape data into a shape of
-        # (days_in_year, lon_size_class, lat_size_class)
-        data = np.transpose(np.reshape(data, (1, lat_size_class,
-                                              lon_size_class), order='C'), (0, 2, 1))
+        # Read float32 values and reshape into a shape of
+        # (1, lon_size_class, lat_size_class);
+        # they are stored as float64 in 'all_data'
+        data = read_grd(fname, 1, lat_size_class, lon_size_class)
         all_data[count_day:count_day + 1, :, :] = data
         count_day += len(data)
         # Stack data vertically to get multi-year data
@@ -182,19 +175,19 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
     fend = '.grd'
     if var_type == 'rain':
         var = 'rain'
-        url = 'https://imdpune.gov.in/cmpg/Realtimedata/Rainfall/rain.php' # new url (dated:Oct 10, 2022)
+        url = REALTIME_URLS['rain'][0] # new url (dated:Oct 10, 2022)
         fini = 'rain_ind0.25_'
     elif var_type == 'rain_gpm':
         var = 'rain'
-        url = 'https://www.imdpune.gov.in/cmpg/Realtimedata/gpm/rain.php'
+        url = REALTIME_URLS['rain_gpm'][0]
         fini = ''
     elif var_type == 'tmax':
         var = 'max'
-        url = 'https://imdpune.gov.in/cmpg/Realtimedata/max/max.php' # new url (dated:Oct 10, 2022)
+        url = REALTIME_URLS['tmax'][0] # new url (dated:Oct 10, 2022)
         fini = 'max'
     elif var_type == 'tmin':
         var = 'min'
-        url = 'https://imdpune.gov.in/cmpg/Realtimedata/min/min.php' # new url (dated:Oct 10, 2022)
+        url = REALTIME_URLS['tmin'][0] # new url (dated:Oct 10, 2022)
         fini = 'min'
     else:
         raise Exception("Error in variable type declaration."
@@ -239,13 +232,14 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
             response = requests.post(url, data=data, proxies=proxies)
             response.raise_for_status()
 
-            if len(response.content) < 1:
-                raise Exception("Error in file download. \nData not downloaded for date : {}. \nStopping IMDLIB".format(str(day.date())))
-                return data
-
-            # Saving file
-            with open(fname, 'wb') as f:
-                f.write(response.content)
+            # Saving file (only if it has exactly the expected size)
+            nlat, nlon = REALTIME_GRIDS[var_type]
+            save_download(response.content, fname, nlat * nlon * 4,
+                          "{} for date {}".format(var_type, str(day.date())),
+                          empty_msg="Error in file download. Real-time {} for date {} is "
+                                    "not available (IMD returned an empty file; recent days "
+                                    "may not be published yet). Nothing was saved."
+                                    .format(var_type, str(day.date())))
 
         print("Download Successful !!!")
 

@@ -25,6 +25,15 @@ or
 > pip install git+https://github.com/iamsaswata/imdlib.git
 
 
+## Quick start
+
+```python
+import imdlib as imd
+
+data = imd.load('rain', 2020, 2022)   # downloads into a local cache; later calls reuse the files
+ds = data.get_xarray()
+```
+
 ## Documentation
 
 [Tutorial](https://saswatanandi.github.io/softwares/imdlib)
