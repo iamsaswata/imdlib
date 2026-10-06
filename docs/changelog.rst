@@ -2,14 +2,14 @@ Changelog History
 =================
 
 
-Unreleased
-----------
+v0.2.0 (06 October 2026)
+------------------------
 
-* Added ``load()``, which downloads IMD data into a local cache, checks each file and returns an IMD object. It supports archive and real-time data (``source='realtime'``), offline use, retries and download progress.
+* Added ``load()``, which downloads IMD data into a local cache, checks each file and returns an IMD object. It supports archive and real-time data (``source='realtime'``, including ``rain_gpm``), offline use, retries and download progress.
 
 * Added ``imdlib.cache`` to show, clear, relocate and unlock the local data cache.
 
-* Fixed ``get_data()`` and ``get_real_data()`` saving empty or incomplete files. An empty reply from IMD (period not published yet) now raises a clear error.
+* Fixed ``get_data()`` and ``get_real_data()`` saving empty or wrong-size files. An empty reply from IMD (period not published yet) now raises ``DataNotAvailableError``; an incomplete download raises ``DownloadError``.
 
 * Faster reading of ``.grd`` files in ``open_data()`` and ``open_real_data()`` (results are unchanged).
 
