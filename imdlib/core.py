@@ -2,13 +2,13 @@
 Developed by Saswata Nandi, Pratiman Patel and Sabyasachi Swain 
 """
 
-import array
 import numpy as np
 import pandas as pd
 import os
 import requests
 import xarray as xr
 from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename, parse_date_input
+from imdlib.util import ARCHIVE_GRIDS, ARCHIVE_URLS, save_download, read_grd
 from datetime import datetime
 # Added 14-05-2023 #
 from scipy.interpolate import griddata 
@@ -635,8 +635,10 @@ class IMD(Compute):
         15-day circular running mean of day-of-year climatological normals.
         With at least 30 loaded years, the default normal period is the entire
         record. Otherwise supply both normal years (at least 10 years).
-        If that period is outside the loaded record, the implementation downloads
-        its temperature data separately.
+        If that period is not within the loaded record, its archive data is
+        read with ``imdlib.load()``: files already in the cache are reused and
+        missing ones are downloaded into the cache. Errors from ``load()``
+        (e.g. ``DataNotAvailableError``) are raised unchanged.
 
         .. list-table:: Region classification in the terrain mask
            :header-rows: 1
@@ -750,8 +752,10 @@ class IMD(Compute):
         15-day circular running mean of day-of-year climatological normals.
         With at least 30 loaded years, the default normal period is the entire
         record. Otherwise supply both normal years (at least 10 years).
-        If that period is outside the loaded record, the implementation downloads
-        its temperature data separately.
+        If that period is not within the loaded record, its archive data is
+        read with ``imdlib.load()``: files already in the cache are reused and
+        missing ones are downloaded into the cache. Errors from ``load()``
+        (e.g. ``DataNotAvailableError``) are raised unchanged.
 
         .. list-table:: Region classification in the terrain mask
            :header-rows: 1
@@ -1053,6 +1057,20 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
 
     """
 
+    # Parse start/end inputs (supports both int years and 'YYYY-MM-DD' strings)
+    start_day, end_day, start_yr_int, end_yr_int = parse_date_input(start_yr, end_yr)
+
+    return _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int,
+                         lambda year: get_filename(year, var_type, fn_format, file_dir))
+
+
+def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_of_year):
+    """
+    Read yearly archive files and build an IMD object (shared by
+    ``open_data`` and ``load``). ``fname_of_year(year)`` returns the file
+    path for a year.
+    """
+
     # Parameters about IMD grid from:
     # http://www.imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
     #######################################
@@ -1066,10 +1084,6 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     lat_temp = np.linspace(7.5, 37.5, lat_size_temp)
     lon_temp = np.linspace(67.5, 97.5, lon_size_temp)
     #######################################
-    # Format Date into <yyyy-mm-dd>
-
-    # Parse start/end inputs (supports both int years and 'YYYY-MM-DD' strings)
-    start_day, end_day, start_yr_int, end_yr_int = parse_date_input(start_yr, end_yr)
 
     # Full-year boundaries for loading complete year files
     full_start_day = f"{start_yr_int}-01-01"
@@ -1101,7 +1115,7 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
     for i in range(start_yr_int, end_yr_int + 1):
 
         # Decide resolution of input file name
-        fname = get_filename(i, var_type, fn_format, file_dir)
+        fname = fname_of_year(i)
 
         # Check if current year is leap year or not
         if LeapYear(i):
@@ -1109,31 +1123,10 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
         else:
             days_in_year = 365
 
-        # length of total data point for current year
-        nlen = days_in_year * lat_size_class * lon_size_class
-
-        # temporary variable to read binary data
-        temp = array.array("f")
-        with open(fname, 'rb') as f:
-            temp.fromfile(f, os.stat(fname).st_size // temp.itemsize)
-
-        data = np.array(list(map(lambda x: x, temp)))
-        
-        # Added for new url (dated:Oct 10, 2022)
-        # Removing first element for rain for new url: https://imdpune.gov.in/lrfindex.php 
-        # Removing (commented out) as it was no longer needed to remove the first element anymore. (dated: March 31, 2023)
-        # if var_type == 'rain':
-        #    data = data[1:]
-            
-        # Check consistency of data points
-        if len(data) != nlen:
-            raise Exception("Error in file reading,"
-                            "mismatch in size of data-length")
-
-        # Reshape data into a shape of
-        # (days_in_year, lon_size_class, lat_size_class)
-        data = np.transpose(np.reshape(data, (days_in_year, lat_size_class,
-                                              lon_size_class), order='C'), (0, 2, 1))
+        # Read float32 values and reshape into a shape of
+        # (days_in_year, lon_size_class, lat_size_class);
+        # they are stored as float64 in 'all_data'
+        data = read_grd(fname, days_in_year, lat_size_class, lon_size_class)
         all_data[count_day:count_day + len(data), :, :] = data
         count_day += len(data)
         # Stack data vertically to get multi-year data
@@ -1231,7 +1224,7 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
     if var_type == 'rain':
         var = 'rain'
         # url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/rainfall.php' (old url)
-        url = 'https://imdpune.gov.in/cmpg/Griddata/rainfall.php' # new url (dated:Oct 10, 2022)
+        url = ARCHIVE_URLS['rain'][0] # new url (dated:Oct 10, 2022)
         fini = 'Rainfall_ind'
         if fn_format == 'yearwise':
             fend = '.grd'
@@ -1240,13 +1233,13 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
     elif var_type == 'tmax':
         var = 'maxtemp'
         # url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/maxtemp.php' (old url)
-        url = 'https://imdpune.gov.in/cmpg/Griddata/maxtemp.php' # new url (dated:Oct 10, 2022)
+        url = ARCHIVE_URLS['tmax'][0] # new url (dated:Oct 10, 2022)
         fini = 'Maxtemp_MaxT_'
         fend = '.GRD'
     elif var_type == 'tmin':
         var = 'mintemp'
         # url = 'https://imdpune.gov.in/Clim_Pred_LRF_New/mintemp.php' (old url)
-        url ='https://imdpune.gov.in/cmpg/Griddata/mintemp.php' # new url (dated:Oct 10, 2022)
+        url = ARCHIVE_URLS['tmin'][0] # new url (dated:Oct 10, 2022)
         fini = 'Mintemp_MinT_'
         fend = '.GRD'
     else:
@@ -1315,9 +1308,15 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             response = requests.post(url, data=data, proxies=proxies)
             response.raise_for_status()
 
-            # Saving file
-            with open(fname, 'wb') as f:
-                f.write(response.content)
+            # Saving file (only if it has exactly the expected size)
+            nlat, nlon = ARCHIVE_GRIDS[var_type]
+            days_in_year = 366 if LeapYear(int(year)) else 365
+            save_download(response.content, fname,
+                          days_in_year * nlat * nlon * 4,
+                          "{} {}".format(var_type, year),
+                          empty_msg="{} {} is not published yet by IMD (the server "
+                                    "returned an empty file). Nothing was saved."
+                                    .format(var_type, year))
 
         print("Download Successful !!!")
 
