@@ -4,4 +4,6 @@ from imdlib.util import DataNotAvailableError, DownloadError
 from imdlib.real import open_real_data, get_real_data
 from imdlib.loader import load
 from imdlib import cache
+from imdlib import regions
+from imdlib.regions import RegionError, RegionNotFoundError, AmbiguousRegionError
 from .version import __version__

@@ -1,7 +1,6 @@
 """
 Developed by Saswata Nandi, Pratiman Patel and Sabyasachi Swain 
 """
-
 import numpy as np
 import pandas as pd
 import os
@@ -15,6 +14,7 @@ from scipy.interpolate import griddata
 from imdlib.compute import Compute, bk_point_month
 from imdlib.naming import RAW_METADATA, VAR_METADATA
 from imdlib.lazy import GrdFiles, warn_memory
+from typing import Optional, Sequence, Union
 try:
     import rioxarray as rio
     has_rioxarray = True
@@ -377,28 +377,130 @@ class IMD(Compute):
                 w = weights[valid]
                 result[t] = np.sum(slab[valid] * w) / np.sum(w)
 
-        # --- Build DatetimeIndex (same logic as get_xarray) ---
+        return pd.DataFrame(result, index=self._time_index(n_time),
+                            columns=[self.var_name])
+
+    def _time_index(self, n_time):
+        """DatetimeIndex of ``n_time`` steps (same logic as get_xarray)."""
         if self.computed:
             if self.scale == 'A':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time, freq='YE')
+                return pd.date_range(self.start_day, periods=n_time, freq='YE')
             elif self.scale == 'climatology':
-                time_index = pd.date_range(
-                    '2000-01-01', periods=12, freq='ME')
+                return pd.date_range('2000-01-01', periods=12, freq='ME')
             elif self.scale == 'anomaly':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time, freq='ME')
+                return pd.date_range(self.start_day, periods=n_time, freq='ME')
             elif self.scale == 'daily':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time)
+                return pd.date_range(self.start_day, periods=n_time)
             elif self.scale == 'M':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time, freq='ME')
-        else:
-            time_index = pd.date_range(self.start_day, periods=self.no_days)
+                return pd.date_range(self.start_day, periods=n_time, freq='ME')
+            raise ValueError("Unknown time scale {!r} of computed data.".format(self.scale))
+        return pd.date_range(self.start_day, periods=self.no_days)
 
-        return pd.DataFrame(result, index=time_index,
-                            columns=[self.var_name])
+    def region(self,
+               state: Union[str, Sequence[str], None] = None,
+               district: Union[str, Sequence[str], None] = None,
+               city: Union[str, Sequence[str], None] = None,
+               basin: Union[str, Sequence[str], None] = None,
+               subbasin: Union[str, Sequence[str], None] = None,
+               *, shapefile=None, by: Optional[str] = None) -> pd.DataFrame:
+        """
+        Area-weighted mean time series of named regions of India.
+
+        Give one type of region: ``state``, ``district``, ``city``, ``basin``,
+        ``subbasin`` or ``shapefile``. Each region becomes one column of the
+        result. Names ignore case, accents and punctuation, and old names and
+        other spellings work too (for example ``'Gurgaon'`` finds Gurugram).
+        Use :func:`imdlib.regions.search` to find names.
+
+        Parameters
+        ----------
+        state : str or list of str, optional
+            State or union territory. Together with ``district`` or
+            ``city`` it only narrows the match, e.g. for district names that
+            exist in more than one state.
+        district : str or list of str, optional
+            District. Together with ``city`` it only narrows the match.
+        city : str or list of str, optional
+            City, town or village: the grid cell that contains it, or a cell
+            next to it with data if that cell has none. If several places
+            have the name, the first in this order is used: a district HQ
+            or state capital of that name; a town of that name (15,000
+            people or more, or an administrative centre); a district HQ or
+            state capital with it as an old or other name; a town with it
+            as an old or other name; any other place. If two places fit
+            equally, add ``state`` and/or ``district``.
+        basin : str or list of str, optional
+            Central Water Commission (CWC) river basin.
+        subbasin : str or list of str, optional
+            CWC sub-basin.
+        shapefile : str or path, optional
+            Polygon shapefile in longitude/latitude (EPSG:4326). Without
+            ``by``, all polygons form one region named after the file. Needs
+            the ``pyshp`` and ``shapely`` packages.
+        by : str, optional
+            One column per part: ``by='district'`` with ``state``,
+            ``by='subbasin'`` with ``basin``, or the name of an attribute
+            field with ``shapefile`` (polygons with the same value form one
+            region).
+
+        Returns
+        -------
+        pandas.DataFrame
+            One column per region, with the same time index as
+            :meth:`spatial_mean`. District and city columns are named
+            ``'Name (State)'``; states, basins and sub-basins by their name.
+            Names are the official names, also when an old name was given.
+
+        Raises
+        ------
+        imdlib.RegionNotFoundError
+            No region has this name (the message suggests close names).
+        imdlib.AmbiguousRegionError
+            The name fits more than one region; add ``state`` or ``district``.
+        ValueError
+            The data is not on an IMD grid (use ``shapefile``), or the region
+            extends beyond clipped data.
+
+        Notes
+        -----
+        A cell's weight is the fraction of the cell inside the region times
+        the cosine of its latitude, so each cell counts in proportion to its
+        area within the region. Cells that are masked or have no value at a
+        time step are left out of that step, and the weights of the other
+        cells are rescaled. If none of a region's cells has data, a cell next
+        to them with data is used. Places without data on most IMD grids,
+        such as island territories, give NaN; real-time temperature and GPM
+        data cover the islands.
+
+        The data object is not changed. For data from :func:`imdlib.load`
+        that is not read yet, only the cells of the region are read.
+
+        Region boundaries are from the Survey of India, names and codes from
+        the Local Government Directory (LGD), basins and sub-basins from the
+        Central Water Commission and places from GeoNames.
+        :func:`imdlib.regions.info` shows the sources and their dates.
+
+        Examples
+        --------
+        >>> import imdlib as imd
+        >>> data = imd.load('rain', 2001, 2020)
+        >>> kerala = data.region(state='Kerala')
+        >>> districts = data.region(district=['Pune', 'Nashik'])
+        >>> maharashtra = data.region(state='Maharashtra', by='district')
+        >>> godavari = data.region(basin='Godavari', by='subbasin')
+        >>> rampur = data.region(city='Rampur', district='Bareilly')
+        >>> catchment = data.region(shapefile='catchment.shp')
+        """
+        from imdlib import regions
+        try:
+            return regions._region(self, state=state, district=district, city=city, basin=basin,
+                                   subbasin=subbasin, shapefile=shapefile, by=by)
+        except Exception as e:
+            # A wrong input is reported from this call, without internal frames
+            error = regions._user_error(e)
+            if error is None:
+                raise
+        raise error from None
 
     def to_netcdf(self, file_name=None, out_dir=None):
 

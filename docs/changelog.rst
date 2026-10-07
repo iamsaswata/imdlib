@@ -7,6 +7,8 @@ Unreleased
 
 * ``load()`` now reads the files when the data is first used, so it returns quickly and the memory warning appears only when the data is read. Results are unchanged.
 
+* Added ``region()``, the area-weighted mean over named states, districts, river basins and sub-basins of India or over the polygons of a shapefile, and the value at a city, as a ``pandas.DataFrame``. ``imdlib.regions.search()``, ``list()`` and ``info()`` find region names and show the sources.
+
 
 v0.2.0 (06 October 2026)
 ------------------------
