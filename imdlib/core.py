@@ -167,13 +167,17 @@ class IMD(Compute):
             return self._source.read_cells(lon_idx, lat_idx)
         return np.array(self.data[:, lon_idx, lat_idx], dtype=np.float64)
 
-    def _land_mask_cells(self, lon_idx, lat_idx):
+    def _land_mask_cells(self, lon_idx, lat_idx, values=None):
         """
         Internal: ``land_mask[lon_idx, lat_idx]`` (None if there is no land
         mask), computed from the selected cells only if the mask is not
-        known yet. Indices as in :meth:`_read_cells`.
+        known yet. Indices as in :meth:`_read_cells`. ``values``, if given,
+        are these cells as returned by :meth:`_read_cells` (unchanged): the
+        mask of rain data is then built from them instead of read again.
         """
         if self._mask_pending:
+            if values is not None and self._data_pending and self._source.var == 'rain':
+                return np.asarray(_build_land_mask('rain', values, len(values)))
             return self._source.land_mask(lon_idx, lat_idx)
         if self.land_mask is None:
             return None
@@ -1273,10 +1277,13 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
 
 
 def _build_land_mask(var_type, all_data, no_days):
-    """Land mask (True = valid cell) of archive data, shape (lon, lat)."""
+    """
+    Land mask (True = valid cell) of archive data, shape (lon, lat). For
+    rain, ``all_data`` may also hold selected cells only (days first).
+    """
     if var_type == 'rain':
         # Part 1: mask -999 sentinel (ocean/outside India)
-        land_mask = (all_data[0, :, :] != -999.0)
+        land_mask = (all_data[0] != -999.0)
         # Part 2: mask cells with zero rainfall across all loaded days
         # (boundary cells with no real observations, reported as 0.0)
         # Only apply when data spans at least a full year to avoid

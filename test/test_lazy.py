@@ -3,6 +3,7 @@ Tests for the lazy reading of IMD objects returned by imdlib.load().
 
 No network access: files are put into the cache directly.
 """
+import os
 import warnings
 
 import numpy as np
@@ -179,6 +180,11 @@ def test_read_cells_without_full_read(isolated, reads, monkeypatch, var, start, 
             assert part.shape == full.data[:, lon, lat].shape
             mask = data._land_mask_cells(lon, lat)
             assert np.array_equal(mask, full.land_mask[lon, lat])
+            # Built from the values already read: rain needs no second read
+            cells = reads['cells']
+            mask = data._land_mask_cells(lon, lat, part)
+            assert np.array_equal(mask, full.land_mask[lon, lat])
+            assert reads['cells'] == cells or var != 'rain'
     assert reads['full'] == 0
     # Mask of the whole grid, without reading all data either
     assert np.array_equal(data.land_mask, full.land_mask)
@@ -212,6 +218,26 @@ def test_read_cells_without_preadv(isolated, monkeypatch):
     data = imd.load('rain', '2019-12-20', '2020-01-10', offline=True)
     for lon, lat in [(np.array([0, 3, 7]), np.array([1, 2, 9])), (slice(None), slice(None))]:
         assert data._read_cells(lon, lat).tobytes() == full.data[:, lon, lat].tobytes()
+
+
+def test_read_cells_partial_preadv(isolated, monkeypatch):
+    """A read that returns fewer bytes than asked is completed by seek and read."""
+    put_archive_eager_names(isolated, 'rain', [2019, 2020])
+    full = eager(isolated, 'rain', '2019-12-20', '2020-01-10')
+    calls = []
+
+    def partial(fd, buffers, offset):
+        buf = buffers[0]
+        got = os.pread(fd, max(1, len(buf) // 3), offset) if hasattr(os, 'pread') else \
+            (os.lseek(fd, offset, os.SEEK_SET), os.read(fd, max(1, len(buf) // 3)))[1]
+        buf[:len(got)] = got
+        calls.append((len(got), len(buf)))
+        return len(got)
+    monkeypatch.setattr(lazy, '_preadv', partial)
+    data = imd.load('rain', '2019-12-20', '2020-01-10', offline=True)
+    for lon, lat in [(np.array([0, 3, 7]), np.array([1, 2, 9])), (slice(None), slice(None))]:
+        assert data._read_cells(lon, lat).tobytes() == full.data[:, lon, lat].tobytes()
+    assert calls and all(got < size for got, size in calls)
 
 
 ###############################################################################
