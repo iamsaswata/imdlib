@@ -165,7 +165,11 @@ def test_read_cells_without_full_read(isolated, reads, monkeypatch, var, start, 
     monkeypatch.setattr(lazy, 'MEMORY_WARNING', 0)
     selections = [(slice(2, 12), slice(5, 15)),            # box
                   (np.array([0, 3, 7]), np.array([1, 2, 9])),  # list of cells
-                  (4, 6), (slice(None), 8)]
+                  (4, 6), (slice(None), 8),
+                  # other index forms, as numpy takes them
+                  (-1, -2), ([0, 2], [3, 30]), (slice(1, 9, 3), slice(25, 2, -7)),
+                  (np.array([5, 5]), slice(None)), (slice(None), np.arange(len(full.lat_array)) % 10 == 4),
+                  (3, slice(7, 7)), (slice(None), slice(None))]
     with warnings.catch_warnings():
         warnings.simplefilter('error')
         for lon, lat in selections:
@@ -198,6 +202,16 @@ def test_read_cells_realtime(isolated, tmp_path, reads):
                           full.data[:, 0:20, 30:40])
     assert data._land_mask_cells(slice(0, 20), slice(30, 40)) is None
     assert reads['full'] == 0
+
+
+def test_read_cells_without_preadv(isolated, monkeypatch):
+    """Systems without os.preadv (Windows) seek and read."""
+    put_archive_eager_names(isolated, 'rain', [2019, 2020])
+    full = eager(isolated, 'rain', '2019-12-20', '2020-01-10')
+    monkeypatch.setattr(lazy, '_preadv', None)
+    data = imd.load('rain', '2019-12-20', '2020-01-10', offline=True)
+    for lon, lat in [(np.array([0, 3, 7]), np.array([1, 2, 9])), (slice(None), slice(None))]:
+        assert data._read_cells(lon, lat).tobytes() == full.data[:, lon, lat].tobytes()
 
 
 ###############################################################################

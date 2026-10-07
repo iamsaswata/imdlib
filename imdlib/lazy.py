@@ -11,6 +11,8 @@ import numpy as np
 # Warn when reading all data needs more memory than this (bytes)
 MEMORY_WARNING = 2e9
 
+_preadv = getattr(os, 'preadv', None)
+
 
 def warn_memory(var, days, mask_days, cells, stacklevel=2):
     """Warn if ``days`` days of float64 data (plus the land mask) are large."""
@@ -20,6 +22,18 @@ def warn_memory(var, days, mask_days, cells, stacklevel=2):
             "Loading {} for {:,} days needs about {:.1f} GB of memory (float64 data). "
             "If this fails or is slow, load a shorter period.".format(var, days, need / 1e9),
             stacklevel=stacklevel + 1)
+
+
+def _read_exactly(f, offset, buf, path):
+    """Fill the writable bytes ``buf`` from the binary file ``f`` at ``offset``."""
+    # One system call where available (Linux, macOS), else seek and read
+    done = _preadv(f.fileno(), [buf], offset) if _preadv else 0
+    while done < len(buf):
+        f.seek(offset + done)
+        got = f.readinto(buf[done:])
+        if not got:
+            raise OSError("The file {} ended before the expected size.".format(path))
+        done += got
 
 
 class GrdFiles:
@@ -98,14 +112,42 @@ class GrdFiles:
                 "Call imdlib.load() again to download it.".format(self.var, path, size,
                                                                   expected))
 
+    def _rows(self, lat_idx):
+        """
+        The band of latitude rows that ``lat_idx`` selects: (first row,
+        number of rows, ``lat_idx`` relative to the first row).
+        """
+        rows = np.arange(self.nlat)[lat_idx]  # IndexError as numpy gives it
+        if isinstance(lat_idx, slice):
+            r = range(self.nlat)[lat_idx]
+            if len(r) == 0 or r.step < 0:
+                return 0, self.nlat, lat_idx
+            return r.start, r[-1] - r.start + 1, slice(0, r.stop - r.start, r.step)
+        if rows.size == 0:
+            return 0, self.nlat, lat_idx
+        first = int(rows.min())
+        return first, int(rows.max()) - first + 1, rows - first
+
     def _chunks(self, lon_idx, lat_idx, max_days=None):
         """Yield the selected cells file by file (float32, days first)."""
+        first_row, nrows, lat_rel = self._rows(lat_idx)
+        day_bytes = self.nlat * self.nlon * 4
+        band_bytes = nrows * self.nlon * 4
         for path, days, first, n in self._parts(max_days):
-            mm = np.memmap(path, dtype='<f4', mode='r', shape=(days, self.nlat, self.nlon))
-            # Copy, so that no reference to the mapped file is kept
-            chunk = np.array(mm[first:first + n].transpose(0, 2, 1)[:, lon_idx, lat_idx])
-            del mm
-            yield chunk
+            # Read only the rows of the band: one read per day, or one read
+            # for all days if the band is the whole grid. This needs far
+            # fewer file accesses than a memory map on slow file systems.
+            band = np.empty((n, nrows, self.nlon), dtype='<f4')
+            buf = memoryview(band).cast('B')
+            with open(path, 'rb', buffering=0) as f:
+                if nrows == self.nlat:
+                    _read_exactly(f, first * day_bytes, buf, path)
+                else:
+                    start = first * day_bytes + first_row * self.nlon * 4
+                    for d in range(n):
+                        _read_exactly(f, start + d * day_bytes,
+                                      buf[d * band_bytes:(d + 1) * band_bytes], path)
+            yield np.array(band.transpose(0, 2, 1)[:, lon_idx, lat_rel])
 
     def read(self):
         """Read all days and cells: float64 array of shape (days, lon, lat)."""
