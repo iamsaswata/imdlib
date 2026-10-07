@@ -8,6 +8,10 @@
 
 To update a source, replace its files and run the build again. No code change is needed.
 
+The source files of the current data are in the private repository
+`iamsaswata/imdlib-region-sources`, tag `regions-2026-10` (ask the maintainer for access).
+Its README has the update steps with exact commands, including tagging each build.
+
 ## 1. Install the build dependencies
 
 They are needed only for the build, not by imdlib users:
