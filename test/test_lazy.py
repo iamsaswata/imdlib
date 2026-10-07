@@ -228,8 +228,8 @@ def test_read_cells_partial_preadv(isolated, monkeypatch):
 
     def partial(fd, buffers, offset):
         buf = buffers[0]
-        got = os.pread(fd, max(1, len(buf) // 3), offset) if hasattr(os, 'pread') else \
-            (os.lseek(fd, offset, os.SEEK_SET), os.read(fd, max(1, len(buf) // 3)))[1]
+        os.lseek(fd, offset, os.SEEK_SET)
+        got = os.read(fd, max(1, len(buf) // 3))
         buf[:len(got)] = got
         calls.append((len(got), len(buf)))
         return len(got)
