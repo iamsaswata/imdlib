@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import requests
 from imdlib.core import IMD
+from imdlib.lazy import GrdFiles
 from imdlib.util import get_filename_realtime
 from imdlib.util import REALTIME_GRIDS, REALTIME_URLS, save_download, read_grd
 
@@ -45,11 +46,12 @@ def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
                           lambda day: get_filename_realtime(day, var_type, file_dir))
 
 
-def _open_realtime(var_type, start_dy, end_dy, fname_of_day):
+def _open_realtime(var_type, start_dy, end_dy, fname_of_day, lazy=False):
     """
     Read daily real-time files and build an IMD object (shared by
     ``open_real_data`` and ``load``). ``fname_of_day(day)`` returns the
-    file path for a day (pandas Timestamp).
+    file path for a day (pandas Timestamp). If ``lazy``, the files are
+    read on first use of the data (``load``).
     """
 
     lat_size_rain = 129
@@ -89,6 +91,19 @@ def _open_realtime(var_type, start_dy, end_dy, fname_of_day):
     else:
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'rain_gpm'/'tmin'/'tmax'. ")
+
+    if lazy:
+        source = GrdFiles(var_type, [(fname_of_day(day), 1) for day in days],
+                          lat_size_class, lon_size_class, 0, len(days), land_mask=False)
+        if var_type == 'rain':
+            lat, lon = lat_rain, lon_rain
+        elif var_type == 'rain_gpm':
+            lat, lon = lat_gpm, lon_gpm
+        else:
+            lat, lon = lat_temp, lon_temp
+        data = IMD(None, var_type, start_dy, end_dy, len(days), lat, lon)
+        data._attach_source(source)
+        return data
 
     # Loop through all the years
     # all_data -> container to store data for all the year

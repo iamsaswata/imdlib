@@ -14,6 +14,7 @@ from datetime import datetime
 from scipy.interpolate import griddata 
 from imdlib.compute import Compute, bk_point_month
 from imdlib.naming import RAW_METADATA, VAR_METADATA
+from imdlib.lazy import GrdFiles, warn_memory
 try:
     import rioxarray as rio
     has_rioxarray = True
@@ -80,6 +81,8 @@ class IMD(Compute):
     """
 
     def __init__(self, data, cat, start_day, end_day, no_days, lat, lon, land_mask=None):
+        # Files of a lazy object (see _attach_source); None if data is in memory
+        self._source = None
         self.data = data
         self.cat = cat
         self.start_day = start_day
@@ -96,9 +99,92 @@ class IMD(Compute):
         self.var_units = meta['units']
         self.var_long_name = meta['long_name']
 
+    # data and land_mask of objects returned by load() are read from the
+    # files on first access; assigning them works as for a plain attribute
+    @property
+    def data(self):
+        if self._data_pending:
+            self._read_data()
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = value
+        self._data_pending = False
+
+    @property
+    def land_mask(self):
+        if self._mask_pending:
+            self.land_mask = self._source.land_mask()
+        return self._land_mask
+
+    @land_mask.setter
+    def land_mask(self, value):
+        self._land_mask = value
+        self._mask_pending = False
+
+    def _attach_source(self, source, data=True, land_mask=True):
+        """
+        Make ``data`` (and ``land_mask``, if the source has one) be read
+        from ``source`` (an ``imdlib.lazy.GrdFiles``) on first access.
+        """
+        self._source = source
+        self._data_pending = data
+        self._mask_pending = land_mask and source.has_land_mask
+
+    def _read_data(self):
+        """Read all data of a lazy object, with the land mask if not known yet."""
+        src = self._source
+        need_mask = self._mask_pending and src.var == 'rain' and src.no_days >= 365
+        warn_memory(src.var, src.no_days, src.no_days if need_mask else 0,
+                    src.nlat * src.nlon, stacklevel=3)
+        data = src.read()
+        if self._mask_pending:
+            # Built from the data just read, as open_data() does
+            self.land_mask = _build_land_mask(src.var, data, src.no_days)
+        self.data = data
+
+    def _read_cells(self, lon_idx, lat_idx):
+        """
+        Internal: values of selected grid cells for all days, without reading
+        the full array if the data is not in memory yet.
+
+        Parameters
+        ----------
+        lon_idx, lat_idx : int, slice or array of int
+            Indices into ``lon_array`` and ``lat_array``, used as in
+            ``data[:, lon_idx, lat_idx]`` (e.g. two slices for a box, or two
+            equal-length arrays for a list of cells).
+
+        Returns
+        -------
+        numpy array (float64)
+            Equal to ``data[:, lon_idx, lat_idx]``. If the data is not in
+            memory, only the selected cells are read from the files of
+            ``load()`` (no memory warning).
+        """
+        if self._data_pending:
+            return self._source.read_cells(lon_idx, lat_idx)
+        return np.array(self.data[:, lon_idx, lat_idx], dtype=np.float64)
+
+    def _land_mask_cells(self, lon_idx, lat_idx):
+        """
+        Internal: ``land_mask[lon_idx, lat_idx]`` (None if there is no land
+        mask), computed from the selected cells only if the mask is not
+        known yet. Indices as in :meth:`_read_cells`.
+        """
+        if self._mask_pending:
+            return self._source.land_mask(lon_idx, lat_idx)
+        if self.land_mask is None:
+            return None
+        return np.array(self.land_mask[lon_idx, lat_idx])
+
     @property
     def shape(self):
-        print(self.data.shape)
+        if self._data_pending:
+            print(self._source.shape)
+        else:
+            print(self.data.shape)
 
     def to_csv(self, file_name=None, lat=None, lon=None, out_dir=None):
 
@@ -1005,9 +1091,20 @@ class IMD(Compute):
         >>> data = imd.open_data(variable, start_yr, end_yr, 'yearwise')
         >>> tmp = data.copy() 
         """
-        new = IMD(self.data.copy(), self.cat, self.start_day, self.end_day,
+        # Data and land mask that are not read yet stay unread in the copy
+        if self._data_pending:
+            data = None
+        else:
+            data = self.data.copy()
+        if self._mask_pending or self.land_mask is None:
+            land_mask = None
+        else:
+            land_mask = self.land_mask.copy()
+        new = IMD(data, self.cat, self.start_day, self.end_day,
                   self.no_days, self.lat_array.copy(), self.lon_array.copy(),
-                  self.land_mask.copy() if self.land_mask is not None else None)
+                  land_mask)
+        if self._source is not None:
+            new._attach_source(self._source, self._data_pending, self._mask_pending)
         # Preserve computed state and variable metadata
         new.computed = self.computed
         new.method = getattr(self, 'method', None)
@@ -1064,11 +1161,13 @@ def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
                          lambda year: get_filename(year, var_type, fn_format, file_dir))
 
 
-def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_of_year):
+def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_of_year,
+                  lazy=False):
     """
     Read yearly archive files and build an IMD object (shared by
     ``open_data`` and ``load``). ``fname_of_year(year)`` returns the file
-    path for a year.
+    path for a year. If ``lazy``, the files are read on first use of the
+    data (``load``).
     """
 
     # Parameters about IMD grid from:
@@ -1106,6 +1205,19 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
+    if lazy:
+        files = [(fname_of_year(i), 366 if LeapYear(i) else 365)
+                 for i in range(start_yr_int, end_yr_int + 1)]
+        source = GrdFiles(var_type, files, lat_size_class, lon_size_class,
+                          total_days(full_start_day, start_day) - 1, no_days,
+                          land_mask=True)
+        if var_type == 'rain':
+            data = IMD(None, var_type, start_day, end_day, no_days, lat_rain, lon_rain)
+        else:
+            data = IMD(None, var_type, start_day, end_day, no_days, lat_temp, lon_temp)
+        data._attach_source(source)
+        return data
+
     # Loop through all the years
     # all_data -> container to store data for all the year
     # all_data.shape = (no_days_full, len(lon), len(lat))
@@ -1141,19 +1253,7 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
         all_data = all_data[start_offset:start_offset + no_days, :, :]
 
     # Build land mask to identify valid grid cells
-    if var_type == 'rain':
-        # Part 1: mask -999 sentinel (ocean/outside India)
-        land_mask = (all_data[0, :, :] != -999.0)
-        # Part 2: mask cells with zero rainfall across all loaded days
-        # (boundary cells with no real observations, reported as 0.0)
-        # Only apply when data spans at least a full year to avoid
-        # false positives for short dry-season ranges
-        if no_days >= 365:
-            all_zero = (all_data == 0.0).all(axis=0)
-            land_mask = land_mask & ~all_zero
-    else:
-        # tmin/tmax: sentinel is the corner value (data[0, 0, 0])
-        land_mask = (all_data[0, :, :] != all_data[0, 0, 0])
+    land_mask = _build_land_mask(var_type, all_data, no_days)
 
     # Create a IMD object
     if var_type == 'rain':
@@ -1170,6 +1270,24 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
                         "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
 
     return data
+
+
+def _build_land_mask(var_type, all_data, no_days):
+    """Land mask (True = valid cell) of archive data, shape (lon, lat)."""
+    if var_type == 'rain':
+        # Part 1: mask -999 sentinel (ocean/outside India)
+        land_mask = (all_data[0, :, :] != -999.0)
+        # Part 2: mask cells with zero rainfall across all loaded days
+        # (boundary cells with no real observations, reported as 0.0)
+        # Only apply when data spans at least a full year to avoid
+        # false positives for short dry-season ranges
+        if no_days >= 365:
+            all_zero = (all_data == 0.0).all(axis=0)
+            land_mask = land_mask & ~all_zero
+    else:
+        # tmin/tmax: sentinel is the corner value (data[0, 0, 0])
+        land_mask = (all_data[0, :, :] != all_data[0, 0, 0])
+    return land_mask
 
 
 def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub_dir=False, proxies=None):
