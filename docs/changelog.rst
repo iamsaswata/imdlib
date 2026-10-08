@@ -7,6 +7,8 @@ Unreleased
 
 * **Breaking change:** ``clip()`` now returns the clipped data and no longer changes the original object: write ``data = data.clip(...)``. It accepts region names, keeps cells that are partly inside with their fraction (``cell_fraction``), and ``spatial_mean()`` uses these fractions.
 
+* ``shape`` now returns the size of the data, e.g. ``(366, 31, 31)``, instead of printing it. In a script, write ``print(data.shape)`` to see it.
+
 * ``spatial_mean()`` of clipped data equals ``region()`` for the same region. ``get_xarray()`` and ``to_netcdf()`` include ``cell_fraction`` for clipped data.
 
 * ``spatial_mean()``, ``get_xarray()``, the land mask of temperature data, the climate indices, ``climatology()``, ``anomaly()``, ``fill_na()``, ``remap()``, ``heatwave()`` and ``coldwave()`` use the missing values of the IMD files (-999 for rain, 99.9 for temperature, none for GPM rain) instead of the value of the corner cell. Results for data that is not clipped are unchanged, except for GPM rain (it has no missing value, so -999 and its corner value are no longer left out) and the cases below.

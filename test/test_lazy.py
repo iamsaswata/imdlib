@@ -97,8 +97,8 @@ def test_load_does_not_read(isolated, reads, capsys):
     data = imd.load('rain', 2019, 2020, offline=True)
     assert reads == {'full': 0, 'cells': 0}
     # Metadata does not read
-    data.shape
-    assert capsys.readouterr().out == '(731, 135, 129)\n'
+    assert data.shape == (731, 135, 129)
+    assert capsys.readouterr().out == ''          # returned, not printed
     assert (data.cat, data.start_day, data.end_day, data.no_days) == \
         ('rain', '2019-01-01', '2020-12-31', 731)
     assert len(data.lat_array) == 129 and len(data.lon_array) == 135
@@ -109,8 +109,7 @@ def test_load_does_not_read(isolated, reads, capsys):
     assert reads == {'full': 1, 'cells': 0}
     data.data
     data.land_mask
-    data.shape
-    assert capsys.readouterr().out == '(731, 135, 129)\n'
+    assert data.shape == (731, 135, 129)
     assert reads == {'full': 1, 'cells': 0}
 
 
