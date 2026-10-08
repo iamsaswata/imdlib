@@ -84,6 +84,7 @@ from imdlib.regions import (_BASIN as BASIN, _DISTRICT as DISTRICT, _GPM as GPM,
                             _SUBBASIN as SUBBASIN, _TYPES as TYPES,
                             _cell_fractions as cell_fractions, _equal_area as equal_area,
                             _normalise as normalise)
+from imdlib.util import land_mask_of  # noqa: E402
 
 SCRIPT_VERSION = 4
 EARTH_RADIUS = 6371.0072        # km, authalic radius of WGS84 (areas in the region table)
@@ -104,8 +105,6 @@ CAPITAL_CODES = ('PPLC', 'PPLA')                # GeoNames national and state ca
 TOWN_CODES = ('PPLC', 'PPLA', 'PPLA2', 'PPLA3', 'PPLA4')  # GeoNames administrative centres
 TOWN_POPULATION = 15000                         # a town: this many people, or a TOWN_CODES place
 STATUS_OWN, STATUS_NEIGHBOUR, STATUS_NO_DATA = 0, 1, 2   # cells of a region on a grid
-TEMP_MISSING = np.float32(99.9)                 # missing value of IMD temperature files
-RAIN_MISSING = np.float32(-999.0)               # missing value of IMD rain files
 
 
 ###############################################################################
@@ -814,29 +813,20 @@ def not_districts(table, overrides):
 ###############################################################################
 
 def data_mask(path, grid, kind):
-    """
-    Cells with data (lon, lat) in an IMD file: not the missing value (rain
-    -999, temperature 99.9) on the first day and, for rain files of a whole
-    year, not zero on every day (the land mask rules of imdlib).
-    """
+    """Cells with data (lon, lat) in an IMD file of ``kind`` 'rain' or 'tmax'."""
     cells = grid.nlat * grid.nlon
     size = os.path.getsize(path)
     days = size // (cells * 4)
     if days == 0 or days * cells * 4 != size:
         raise SystemExit('{} is not a {}x{} IMD file'.format(path, grid.nlat, grid.nlon))
     a = np.fromfile(path, '<f4').reshape(days, grid.nlat, grid.nlon).transpose(0, 2, 1)
-    if kind == 'rain':
-        mask = a[0] != RAIN_MISSING
-        if days >= 365:
-            mask &= ~(a == 0.0).all(axis=0)
-        return mask
-    return a[0] != TEMP_MISSING
+    return land_mask_of(kind, [a], days)
 
 
 def data_masks(args):
     """Cells with data on each grid, from the sample files."""
-    samples = {'r025': (args.rain_sample, 'rain'), 't100': (args.tmax_sample, 'temp'),
-               't050': (args.rt_tmax_sample, 'temp')}
+    samples = {'r025': (args.rain_sample, 'rain'), 't100': (args.tmax_sample, 'tmax'),
+               't050': (args.rt_tmax_sample, 'tmax')}
     masks = {}
     for key, (path, kind) in samples.items():
         masks[key] = data_mask(path, GRIDS[key], kind)

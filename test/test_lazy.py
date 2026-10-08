@@ -352,3 +352,8 @@ def test_changed_file_before_first_use(isolated):
     (isolated / 'archive' / 'tmax' / '2020.grd').write_bytes(b'\0' * 400)
     with pytest.raises(OSError, match="has changed since load"):
         data.data
+
+
+def test_memory_warning_still_in_loader():
+    import imdlib.loader
+    assert imdlib.loader.MEMORY_WARNING == lazy.MEMORY_WARNING

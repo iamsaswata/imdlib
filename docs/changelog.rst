@@ -5,6 +5,18 @@ Changelog History
 Unreleased
 ----------
 
+* **Breaking change:** ``clip()`` now returns the clipped data and no longer changes the original object: write ``data = data.clip(...)``. It accepts region names, keeps cells that are partly inside with their fraction (``cell_fraction``), and ``spatial_mean()`` uses these fractions.
+
+* ``spatial_mean()`` of clipped data equals ``region()`` for the same region. ``get_xarray()`` and ``to_netcdf()`` include ``cell_fraction`` for clipped data.
+
+* ``spatial_mean()``, ``get_xarray()``, the land mask of temperature data, the climate indices, ``climatology()``, ``anomaly()``, ``fill_na()``, ``remap()``, ``heatwave()`` and ``coldwave()`` use the missing values of the IMD files (-999 for rain, 99.9 for temperature, none for GPM rain) instead of the value of the corner cell. Results for data that is not clipped are unchanged, except for GPM rain (it has no missing value, so -999 and its corner value are no longer left out) and the cases below.
+
+* Some results on real-time and computed data change because valid zero values are no longer turned into missing values, e.g. ``remap()`` or ``fill_na()`` after ``compute('dr', 'A')`` on real-time rain.
+
+* ``to_geotiff()`` always uses NaN as its nodata value, so values equal to the corner cell (e.g. dry days in clipped rain) are kept. ``fill_na()`` stops when no cell has a value on a day, instead of running forever. ``compute('dtr', ...)`` and ``anomaly()`` with a given climatology raise an error if the two datasets are not on the same cells, and SPEI raises an error for clipped ``tmax`` or ``tmin``.
+
+* ``fill_na()`` finds the temperature cells it does not fill (the Andaman and Nicobar area and the row south of 8°N) by their coordinates, on every grid. Results on the 1.0 degree archive grid are unchanged. Results change for real-time temperature (0.5 degree grid) and other grids, where the 1.0 degree cell positions picked the wrong cells, and for GPM rain, which is now filled everywhere like rain.
+
 * ``load()`` now reads the files when the data is first used, so it returns quickly and the memory warning appears only when the data is read. Results are unchanged.
 
 * Added ``region()``, the area-weighted mean over named states, districts, river basins and sub-basins of India or over the polygons of a shapefile, and the value at a city, as a ``pandas.DataFrame``. ``imdlib.regions.search()``, ``list()`` and ``info()`` find region names and show the sources.

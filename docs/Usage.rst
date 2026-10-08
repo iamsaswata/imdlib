@@ -199,7 +199,9 @@ Spatial Mean
 Compute area-weighted spatial mean to get a single time series from gridded data.
 Uses cosine-latitude weighting to correct for meridian convergence
 (grid cells at higher latitudes are narrower). Respects ``land_mask`` —
-ocean and boundary cells are excluded automatically.
+ocean and boundary cells are excluded automatically, as are missing values
+(-999 for rain, 99.9 for temperature). On data from ``clip()``, each cell also counts
+with the fraction of it inside the region (see `Clipping to a region`_).
 
 Returns a ``pandas.DataFrame`` with a ``DatetimeIndex``.
 
@@ -209,9 +211,9 @@ Returns a ``pandas.DataFrame`` with a ``DatetimeIndex``.
 
     # Basin-averaged daily rainfall
     data = imd.load('rain', 2010, 2020)
-    data.clip('godavari_basin.shp')
-    ts = data.spatial_mean()
-    # ts is a pandas DataFrame, shape (4018, 1), column 'rain'
+    godavari = data.clip(basin='Godavari')
+    ts = godavari.spatial_mean()
+    # ts is a pandas DataFrame with the column 'rain'
 
 Works on any computed output:
 
@@ -221,8 +223,8 @@ Works on any computed output:
 
     # District-averaged SPI-3
     data = imd.load('rain', 1991, 2020)
-    data.clip('nashik_district.shp')
-    ts = data.compute('spi', 'M', timescale=3).spatial_mean()
+    nashik = data.clip(district='Nashik')
+    ts = nashik.compute('spi', 'M', timescale=3).spatial_mean()
 
     # All-India climatological monthly mean
     data = imd.load('rain', 1991, 2020)
@@ -409,8 +411,8 @@ Notes
 - ``region()`` works on any IMD grid, also with data remapped onto one. Other grids need
   ``shapefile=``.
 
-- ``clip()`` followed by ``spatial_mean()`` uses the cells whose centre is inside the polygon,
-  so its result is close to that of ``region()`` but not the same.
+- ``clip()`` gives the data of one region as a grid (see `Clipping to a region`_). Its
+  ``spatial_mean()`` equals ``region()`` for the same region.
 
 - Places without data on most IMD grids, such as island territories, give NaN. Real-time
   temperature and GPM data cover the islands.
@@ -419,6 +421,50 @@ Notes
   Directory (LGD), basins and sub-basins from the Central Water Commission (CWC) and places
   from GeoNames. A district created after these boundaries raises an error that names the
   district it lies in.
+
+
+Clipping to a region
+====================
+
+``clip()`` returns the data of one region as a new IMD object, cut to the smallest box of grid
+cells around the region. The region is a state, district, basin or sub-basin, with names as
+for ``region()``, or the polygons of a shapefile. The original object is not changed.
+
+Every grid cell that overlaps the region is kept, so a small district keeps at least one cell.
+Cells outside the region are NaN. The attribute ``cell_fraction`` holds the fraction of each
+cell inside the region (0 outside), and ``spatial_mean()`` weights each cell by it.
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    data = imd.load('rain', 2001, 2020)
+
+    kerala = data.clip(state='Kerala')
+    pune = data.clip(district='Pune')
+    bilaspur = data.clip(district='Bilaspur', state='Chhattisgarh')
+    godavari = data.clip(basin='Godavari')
+    wainganga = data.clip(subbasin='Wainganga')
+    catchment = data.clip('my_catchment.shp')
+
+    kerala.to_netcdf('kerala.nc')
+
+The clipped object's ``spatial_mean()`` equals ``region()`` for the same region:
+``data.clip(state='Kerala').spatial_mean()`` gives the values of ``data.region(state='Kerala')``.
+
+- With data from ``load()``, ``clip()`` reads nothing. The clipped data reads only the cells
+  of its box when it is first used.
+- ``compute()``, ``climatology()``, ``anomaly()``, ``copy()`` and ``fill_na()`` keep
+  ``cell_fraction``; ``remap()`` removes it. ``get_xarray()`` and ``to_netcdf()`` include it as
+  the coordinate ``cell_fraction``.
+- ``clip()`` takes one area. For several regions, or for a city, use ``region()``.
+- Functions that combine two datasets need them on the same cells: for ``compute('dtr', ...)``
+  clip ``tmax`` and ``tmin`` to the same region (or neither), and likewise the data and the
+  climatology given to ``anomaly()``. SPEI needs unclipped ``tmax`` and ``tmin``; rainfall
+  may be clipped, or compute SPEI on the full data and clip the result.
+- A shapefile must contain polygons in longitude/latitude (EPSG:4326), and all its polygons
+  form one area. This needs the ``pyshp`` and ``shapely`` packages and works on any grid.
+  Region names work on IMD grids.
 
 
 Climatology & Anomaly

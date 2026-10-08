@@ -87,6 +87,85 @@ def read_grd(fname, days, nlat, nlon):
     return np.transpose(data.reshape(days, nlat, nlon), (0, 2, 1))
 
 
+# Missing values of IMD files (GPM rain has none)
+RAIN_MISSING = -999.0
+TEMP_MISSING = 99.9
+
+
+def _missing(values, cat):
+    """True where ``values`` are the missing value of IMD files of this variable."""
+    if cat == 'rain':
+        return values == RAIN_MISSING
+    if cat in ('tmin', 'tmax'):
+        # 99.9 as stored (float32) and as typed
+        return (values == TEMP_MISSING) | (values == float(np.float32(TEMP_MISSING)))
+    return np.zeros(np.shape(values), dtype=bool)          # GPM rain has none
+
+
+# Rain cells that are zero on all days are masked only for this many days or more
+RAIN_MASK_MIN_DAYS = 365
+
+# Tolerance (degrees) when matching cell coordinates
+COORD_TOL = 1e-6
+
+
+def mask_needs_all_days(cat, no_days):
+    """True if the land mask needs all days, not only the first."""
+    return cat == 'rain' and no_days >= RAIN_MASK_MIN_DAYS
+
+
+def land_mask_of(cat, chunks, no_days):
+    """
+    Land mask (True = cell with data) from ``chunks`` of consecutive days
+    (days first), ``no_days`` days in total: not missing on the first day
+    and, for rain over ``RAIN_MASK_MIN_DAYS`` days or more, not zero on all days.
+    """
+    chunks = iter(chunks)
+    first = next(chunks)
+    mask = ~_missing(first[0], cat)
+    if mask_needs_all_days(cat, no_days):
+        all_zero = (first == 0.0).all(axis=0)
+        for chunk in chunks:
+            all_zero &= (chunk == 0.0).all(axis=0)
+        mask = mask & ~all_zero
+    return np.asarray(mask)
+
+
+def _check_same_cells(objs, what):
+    """
+    Raise ValueError unless the IMD objects ``objs`` (a dict name -> object)
+    are on the same grid cells: the same longitudes and latitudes, and the
+    same ``cell_fraction`` (both unclipped, or clipped to the same region).
+    ``what`` is the function named in the error.
+    """
+    def cells(obj):
+        clipped = getattr(obj, 'cell_fraction', None) is not None
+        return "{} x {} cells from {:g}E, {:g}N{}".format(
+            len(obj.lon_array), len(obj.lat_array), float(obj.lon_array[0]),
+            float(obj.lat_array[0]), ' (clipped)' if clipped else '')
+
+    def same(a, b):
+        if len(a.lon_array) != len(b.lon_array) or len(a.lat_array) != len(b.lat_array):
+            return False
+        if not (np.allclose(a.lon_array, b.lon_array, rtol=0, atol=COORD_TOL) and
+                np.allclose(a.lat_array, b.lat_array, rtol=0, atol=COORD_TOL)):
+            return False
+        fa, fb = getattr(a, 'cell_fraction', None), getattr(b, 'cell_fraction', None)
+        if fa is None or fb is None:
+            return fa is None and fb is None
+        return np.array_equal(fa, fb)
+
+    names = list(objs)
+    first = objs[names[0]]
+    for name in names[1:]:
+        if not same(first, objs[name]):
+            raise ValueError(
+                "{} needs {} on the same grid cells, but {} has {} and {} has {}. Use data "
+                "from the same grid, clipped to the same region or not clipped at all.".format(
+                    what, ' and '.join(names), names[0], cells(first), name,
+                    cells(objs[name])))
+
+
 def parse_date_input(start, end=None):
     """Parse date input that can be int year or 'YYYY-MM-DD' string.
 

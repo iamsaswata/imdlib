@@ -24,6 +24,8 @@ import numpy as np
 from scipy.stats import gamma as gamma_dist
 from scipy.stats import norm
 
+from imdlib.util import COORD_TOL, _check_same_cells
+
 
 # ====================================================================
 # Gamma fitting for SPI (MLE, Thom 1958)
@@ -455,7 +457,8 @@ def spei(imd_obj, **kwargs):
         full record. At least 10 years of data and calibration are required.
     tmax, tmin : IMD
         Required daily maximum and minimum temperature objects, covering the
-        same dates as rainfall. Use the native IMD temperature grids.
+        same dates as rainfall. Use the native IMD temperature grids, not
+        clipped (rainfall may be clipped).
 
     Returns
     -------
@@ -512,6 +515,15 @@ def spei(imd_obj, **kwargs):
         raise Exception('tmax parameter must be tmax data')
     if tmin_obj.cat != 'tmin':
         raise Exception('tmin parameter must be tmin data')
+    # PET is interpolated from the 1-degree temperature grid: clipped
+    # temperature has no values outside its region, so PET would be wrong at
+    # the region's edge. Clipped rain with full temperature is exact.
+    if tmax_obj.cell_fraction is not None or tmin_obj.cell_fraction is not None:
+        raise ValueError(
+            "SPEI needs unclipped tmax and tmin. Compute it on the full data and clip the "
+            "result, e.g. rain.compute('spei', 'M', tmax=tmax, tmin=tmin).clip(state='Kerala'), "
+            "or pass the full tmax and tmin with clipped rain.")
+    _check_same_cells({'tmax': tmax_obj, 'tmin': tmin_obj}, 'SPEI')
 
     timescale = kwargs.get('timescale', 3)
     cal_start = kwargs.get('cal_start', None)
@@ -560,18 +572,11 @@ def spei(imd_obj, **kwargs):
     pet_lat = pet_obj.lat_array
 
     pet_025 = np.ones_like(mon_precip) * np.nan
-    # Find index offsets where PET grid starts in rain grid
-    lon_offset = np.argmin(np.abs(rain_lon - pet_lon[0]))
-    lat_offset = np.argmin(np.abs(rain_lat - pet_lat[0]))
-    lon_end = lon_offset + len(pet_lon)
-    lat_end = lat_offset + len(pet_lat)
-    # Clip to rain grid bounds
-    lon_end = min(lon_end, len(rain_lon))
-    lat_end = min(lat_end, len(rain_lat))
-    pet_ln = lon_end - lon_offset
-    pet_lt = lat_end - lat_offset
-    pet_025[:, lon_offset:lon_end, lat_offset:lat_end] = \
-        pet_025_raw[:, :pet_ln, :pet_lt]
+    # Rain cells with a PET cell at the same coordinates (rain or
+    # temperature data may also be clipped)
+    rain_i, pet_i = np.nonzero(np.abs(rain_lon[:, None] - pet_lon[None, :]) < COORD_TOL)
+    rain_j, pet_j = np.nonzero(np.abs(rain_lat[:, None] - pet_lat[None, :]) < COORD_TOL)
+    pet_025[:, rain_i[:, None], rain_j[None, :]] = pet_025_raw[:, pet_i[:, None], pet_j[None, :]]
 
     lon_size = mon_precip.shape[1]
     lat_size = mon_precip.shape[2]

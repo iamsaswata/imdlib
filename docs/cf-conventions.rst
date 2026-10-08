@@ -10,5 +10,7 @@ The IMDLIB produces netCDF (network Common Data Form) based final output. It is 
 
 .. _CF Conventions homepage: https://cfconventions.org/
 
+Data cut with ``clip()`` has one more coordinate, ``cell_fraction`` (lat, lon): the fraction of each grid cell inside the region (``units`` 1; 0 outside). Cells that are partly inside keep their values, and ``spatial_mean()`` weights them by this fraction.
+
 .. image:: savefig/fig2.jpg
    :width: 700

@@ -4,6 +4,7 @@ from datetime import datetime
 from scipy.stats import norm, rankdata
 import imdlib
 from imdlib.drought import spi, spei
+from imdlib.util import _missing, _check_same_cells
 
 
 class Compute(object):
@@ -587,11 +588,13 @@ def dtr_anu(tmx, **kwargs):
     else:
         raise Exception('tmin data not set/given')
     if tmx.cat == 'tmax' and tmn.cat == 'tmin':
+        # Same cells (e.g. both clipped to the same region, or neither)
+        _check_same_cells({'tmax': tmx, 'tmin': tmn}, "compute('dtr')")
+        # Missing values of the files (99.9) become NaN
         data1 = tmx.data
-        nan_hint = data1[0, 0, 0]
-        data1[data1 == nan_hint] = np.nan
+        data1[_missing(data1, tmx.cat)] = np.nan
         data2 = tmn.data
-        data2[data2 == nan_hint] = np.nan
+        data2[_missing(data2, tmn.cat)] = np.nan
         data = data1 - data2
         bk_list = bk_point(tmx)
         bk_list.shape[0]
@@ -604,7 +607,6 @@ def dtr_anu(tmx, **kwargs):
             else:
                 tmp_data = data[bk_list[i - 1]:bk_list[i], :, :]
 
-            tmp_data[tmp_data == tmp_data[0, 0, 0]] = np.nan
             new_data[i, :, :] = tmp_data[:, :, :].mean(0)
 
         # new_data[np.where(np.isnan(new_data))] = nan_hint
@@ -646,7 +648,6 @@ def mxadt(imd_obj):
     else:
         bk_list = bk_point(imd_obj)
         bk_list.shape[0]
-        nan_hint = imd_obj.data[0, 0, 0]
         new_data = np.ones(
             (bk_list.shape[0], imd_obj.data.shape[1], imd_obj.data.shape[2]),
             dtype=np.float64) * np.nan
@@ -656,7 +657,7 @@ def mxadt(imd_obj):
             else:
                 tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            tmp_data[tmp_data == nan_hint] = np.nan
+            tmp_data[_missing(tmp_data, imd_obj.cat)] = np.nan
             new_data[i, :, :] = tmp_data[:, :, :].max(0)
 
         # new_data[np.where(np.isnan(new_data))] = nan_hint
@@ -697,7 +698,6 @@ def mnadt_anu(imd_obj):
     else:
         bk_list = bk_point(imd_obj)
         bk_list.shape[0]
-        nan_hint = imd_obj.data[0, 0, 0]
         new_data = np.ones(
             (bk_list.shape[0], imd_obj.data.shape[1], imd_obj.data.shape[2]),
             dtype=np.float64) * np.nan
@@ -707,7 +707,7 @@ def mnadt_anu(imd_obj):
             else:
                 tmp_data = imd_obj.data[bk_list[i - 1]:bk_list[i], :, :].copy()
 
-            tmp_data[tmp_data == nan_hint] = np.nan
+            tmp_data[_missing(tmp_data, imd_obj.cat)] = np.nan
             new_data[i, :, :] = tmp_data[:, :, :].min(0)
 
         # new_data[np.where(np.isnan(new_data))] = nan_hint
@@ -748,7 +748,6 @@ def rxa(imd_obj):
     else:
         bk_list = bk_point(imd_obj)
         bk_list.shape[0]
-        nan_hint = imd_obj.data[0, 0, 0]
         new_data = np.ones((bk_list.shape[0], imd_obj.data.shape[1],
                            imd_obj.data.shape[2]), dtype=np.float64) * np.nan
         for i in range(bk_list.shape[0]):
@@ -757,7 +756,7 @@ def rxa(imd_obj):
             else:
                 tmp_data = imd_obj.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            tmp_data[tmp_data == nan_hint] = np.nan
+            tmp_data[_missing(tmp_data, imd_obj.cat)] = np.nan
             new_data[i, :, :] = tmp_data[:, :, :].max(0)
 
         # new_data[np.where(np.isnan(new_data))] = nan_hint
@@ -1143,12 +1142,9 @@ def sdii(imd_obj):
         const_data = imd_obj.data.copy()
         nume = rtwd(imd_obj)
         nume = nume.data
-        nan_hint = nume[0, 0, 0]
-        nume[nume == nan_hint] = np.nan
         imd_obj.data = const_data
         deno = dr(imd_obj)
         deno = deno.data
-        deno[deno == nan_hint] = np.nan
         new_data = np.divide(nume, deno)
         # new_data[np.where(np.isnan(new_data))] = nan_hint
         if imd_obj.land_mask is not None:
@@ -1183,7 +1179,6 @@ def pci(imd_obj):
     if not imd_obj.cat == 'rain':
         raise Exception('Input data is not rainfall type')
     else:
-        nan_hint = imd_obj.data[0, 0, 0]
         bk_list_month = bk_point_month(imd_obj)
 
         new_data = np.ones((int(bk_list_month.shape[0]/12),
@@ -1203,7 +1198,7 @@ def pci(imd_obj):
                 tmp_data = imd_obj.data[
                     bk_list_month[i-1]:bk_list_month[i], :, :].copy()
 
-            tmp_data[tmp_data == nan_hint] = np.nan
+            tmp_data[_missing(tmp_data, imd_obj.cat)] = np.nan
             mon_data[i, :, :] = tmp_data[:, :, :].sum(0)
 
             if ((i+1) % 12 == 0 and i > 1):

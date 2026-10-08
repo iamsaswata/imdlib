@@ -14,6 +14,8 @@ import requests
 
 from imdlib import cache
 from imdlib.core import _open_archive
+# Read-only alias: the threshold is set in imdlib.lazy (MEMORY_WARNING there)
+from imdlib.lazy import MEMORY_WARNING  # noqa: F401
 from imdlib.real import _open_realtime
 from imdlib.util import (ARCHIVE_GRIDS, ARCHIVE_URLS, REALTIME_GRIDS, REALTIME_URLS,
                          DataNotAvailableError, DownloadError, LeapYear,

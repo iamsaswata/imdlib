@@ -27,6 +27,8 @@ from collections import namedtuple
 import numpy as np
 import pandas as pd
 
+from imdlib.util import COORD_TOL, _missing
+
 # list() is left out, so that 'from imdlib.regions import *' keeps the builtin list
 __all__ = ['search', 'info', 'RegionError', 'RegionNotFoundError', 'AmbiguousRegionError']
 
@@ -69,13 +71,12 @@ _GPM = _Grid(50.0, -30.0, 0.25, 241, 281)
 _GPM_OFFSET = (66, 146)
 # Cell index of a city outside a grid
 _NO_CELL = 65535
-# Missing values of IMD files (GPM rain has none)
-_RAIN_MISSING = -999.0
-_TEMP_MISSING = 99.9
 
 _ONE_TYPE = "Give exactly one of state=, district=, city=, basin=, subbasin=, shapefile=."
-_NOT_IMD_GRID = ("region() needs data on an IMD grid (0.25°, 0.5°, 1.0°, GPM 0.25°). "
-                 "For other grids use region(shapefile=...).")
+_ONE_AREA = ("Give exactly one area: state=, district=, basin=, subbasin= or a shapefile "
+             "(state= can be added to district= to narrow the match).")
+_NOT_IMD_GRID = ("{0}() needs data on an IMD grid (0.25°, 0.5°, 1.0°, GPM 0.25°). "
+                 "For other grids use {0}(shapefile=...).")
 
 
 ###############################################################################
@@ -94,24 +95,35 @@ class AmbiguousRegionError(RegionError):
     """The name fits more than one region; add ``state=`` or ``district=``."""
 
 
-def _user_error(exc):
+def _is_user_error(exc):
     """
-    ``exc`` without its traceback if it reports a wrong input, else None.
-
-    Wrong inputs are the region errors and the TypeError, ValueError and
-    ImportError raised by the checks in this module. The public functions
-    raise them again without the internal frames, so that the traceback ends
-    at the user's call. Other errors keep their full traceback.
+    True if ``exc`` reports a wrong input: a region error, or a TypeError,
+    ValueError or ImportError raised by the checks in this module.
     """
     if not isinstance(exc, (TypeError, ValueError, ImportError)):
-        return None
+        return False
     tb = exc.__traceback__
     while tb is not None and tb.tb_next is not None:
         tb = tb.tb_next
-    if isinstance(exc, RegionError) or (tb is not None and
-                                        tb.tb_frame.f_globals.get('__name__') == __name__):
-        return exc.with_traceback(None)
-    return None
+    return isinstance(exc, RegionError) or (tb is not None and
+                                            tb.tb_frame.f_globals.get('__name__') == __name__)
+
+
+class _user_facing:
+    """
+    Context manager for public functions: a wrong input raised inside is
+    reported from the public call, without internal frames or chaining.
+    """
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, kind, exc, tb):
+        if isinstance(exc, Exception) and _is_user_error(exc):
+            tb.tb_next = None                   # keep only the public frame
+            exc.__cause__ = None
+            exc.__suppress_context__ = True
+        return False
 
 
 ###############################################################################
@@ -505,11 +517,12 @@ def _as_names(value, keyword):
     raise TypeError("{}= must be a name or a list of names, not {!r}.".format(keyword, value))
 
 
-def _resolve_region(t, name, states=None):
+def _resolve_region(t, name, states=None, caller='region'):
     """
     Id of the state, district, basin or sub-basin (type ``t``) called ``name``.
     For districts, ``states`` (a set of state ids) narrows the match. An
     official name is used before an old name or another spelling.
+    ``caller`` is the public method named in the errors.
     """
     R = _regions()
     key = _normalise(name)
@@ -539,18 +552,20 @@ def _resolve_region(t, name, states=None):
         raise RegionNotFoundError("No district named {!r} in {}. Found: {}.".format(
             name, _join(sorted(R.name[s] for s in states)),
             _join(sorted({R.label(r) for r, _ in everywhere}))))
-    raise _region_not_found(t, name, key, states)
+    raise _region_not_found(t, name, key, states, caller)
 
 
-def _region_not_found(t, name, key, states):
+def _region_not_found(t, name, key, states, caller='region'):
     R = _regions()
     in_states = t == _DISTRICT and states is not None
     if t == _DISTRICT:
         for place, state, part in R.not_district.get(key, []):
             if not in_states or state in states:
+                # clip() takes no city=: name the method that does
+                use = "city={!r}" if caller == 'region' else "region(city={!r})"
                 return RegionNotFoundError(
                     "{} is not a district in the official boundaries; it is part of {}. For "
-                    "{} itself use city={!r}.".format(place, part, place, place))
+                    "{} itself use {}.".format(place, part, place, use.format(place)))
         for new, state, parent in R.newer.get(key, []):
             if not in_states or state in states:
                 return RegionNotFoundError(
@@ -703,8 +718,9 @@ def _target(state, district, city, basin, subbasin):
     raise TypeError(_ONE_TYPE)
 
 
-def _select(state=None, district=None, city=None, basin=None, subbasin=None, by=None):
-    """The columns (list of _Column) for the keywords of region()."""
+def _select(state=None, district=None, city=None, basin=None, subbasin=None, by=None,
+            caller='region'):
+    """The columns (list of _Column) for the keywords of region() or clip() (``caller``)."""
     kind, value = _target(state, district, city, basin, subbasin)
     names = _as_names(value, kind)
     if by is not None and {'state': 'district', 'basin': 'subbasin'}.get(kind) != by:
@@ -725,7 +741,7 @@ def _select(state=None, district=None, city=None, basin=None, subbasin=None, by=
     states = _state_ids(state) if t == _DISTRICT else None
     ids = []
     for n in names:
-        r = _resolve_region(t, n, states)
+        r = _resolve_region(t, n, states, caller)
         ids += R.children.get(r, []) if by is not None else [r]
     return [_Column(R.label(r), 'region', r) for r in _unique(ids)]
 
@@ -734,8 +750,9 @@ def _select(state=None, district=None, city=None, basin=None, subbasin=None, by=
 # Cells and weights on the object's grid
 ###############################################################################
 
-# Cells of a column: indices into the object's lon_array and lat_array, and weights
-_Cells = namedtuple('_Cells', 'lon lat weight')
+# Cells of a column: indices into the object's lon_array and lat_array, weights
+# (fraction of the cell inside the region times cos(lat)) and fractions
+_Cells = namedtuple('_Cells', 'lon lat weight fraction')
 
 
 def _offset(values, start, step, n):
@@ -745,32 +762,38 @@ def _offset(values, start, step, n):
         return None
     k = (values[0] - start) / step
     o = int(round(k))
-    if abs(k - o) > 1e-6 or o < 0 or o + len(values) > n:
+    if abs(k - o) > COORD_TOL or o < 0 or o + len(values) > n:
         return None
-    if not np.allclose(values, start + step * np.arange(o, o + len(values)), rtol=0, atol=1e-6):
+    if not np.allclose(values, start + step * np.arange(o, o + len(values)), rtol=0,
+                       atol=COORD_TOL):
         return None
     return o
 
 
-def _identify_grid(obj):
+def _identify_grid(obj, caller='region'):
     """
     (grid key, lon offset, lat offset) of the object: an IMD grid or a window
-    of it (e.g. after clip()). The key is one of _GRIDS or 'gpm'.
+    of it (e.g. after clip()). The key is one of _GRIDS or 'gpm'. ``caller``
+    is the public method named in the error.
     """
     grids = dict(_GRIDS, gpm=_GPM)
     order = ['gpm'] + _list(_GRIDS) if obj.cat == 'rain_gpm' else _list(_GRIDS) + ['gpm']
+    # The grid that clip() cut the data from first: a box one cell wide fits several grids
+    hint = getattr(obj, '_grid', None)
+    if hint in grids:
+        order = [hint] + [k for k in order if k != hint]
     for key in order:
         g = grids[key]
         i = _offset(obj.lon_array, g.lon0, g.step, g.nlon)
         j = _offset(obj.lat_array, g.lat0, g.step, g.nlat)
         if i is not None and j is not None:
             return key, i, j
-    raise ValueError(_NOT_IMD_GRID)
+    raise ValueError(_NOT_IMD_GRID.format(caller))
 
 
-def _named_cells(obj, columns):
+def _named_cells(obj, columns, caller='region'):
     """Cells of named regions and cities on the object's grid."""
-    key, i_off, j_off = _identify_grid(obj)
+    key, i_off, j_off = _identify_grid(obj, caller)
     weights = 'r025' if key == 'gpm' else key
     grid = _GRIDS[weights]
     if key == 'gpm':
@@ -791,19 +814,22 @@ def _named_cells(obj, columns):
                 (ilat >= len(obj.lat_array))).any():
             what = 'is outside' if col.kind == 'city' else 'extends beyond'
             raise ValueError("{} {} this data's extent (was it clipped?).".format(col.label, what))
-        out.append(_Cells(ilon, ilat, weight))
+        out.append(_Cells(ilon, ilat, weight, frac))
     return out
 
 
-def _shapefile_cells(obj, path, by):
-    """[(label, _Cells)] of the polygons of a shapefile, on the object's own grid."""
+def _shapefile_cells(obj, path, by, caller='region'):
+    """
+    [(label, _Cells)] of the polygons of a shapefile, on the object's own
+    grid. ``caller`` is the public method named in the errors.
+    """
     try:
         import shapefile as pyshp
         import shapely
         from shapely.geometry import shape
     except ImportError:
-        raise ImportError("region(shapefile=...) needs pyshp and shapely: "
-                          "pip install pyshp shapely") from None
+        raise ImportError("{}(shapefile=...) needs pyshp and shapely: "
+                          "pip install pyshp shapely".format(caller)) from None
     path = os.fspath(path)
     stem = os.path.splitext(path)[0]
     name = os.path.basename(path)
@@ -815,8 +841,8 @@ def _shapefile_cells(obj, path, by):
     groups = {}
     with pyshp.Reader(path) as sf:
         if sf.shapeType not in (pyshp.POLYGON, pyshp.POLYGONZ, pyshp.POLYGONM):
-            raise ValueError("{} has no polygons; region(shapefile=...) needs polygons."
-                             .format(name))
+            raise ValueError("{} has no polygons; {}(shapefile=...) needs polygons."
+                             .format(name, caller))
         fields = [f[0] for f in sf.fields[1:]]
         if by is not None and by not in fields:
             raise ValueError("{} has no field {!r}. Fields: {}.".format(
@@ -844,18 +870,9 @@ def _shapefile_cells(obj, path, by):
         if not keep.any():
             raise ValueError("{} does not overlap this data's grid.".format(label))
         ilon, ilat = ilon[keep], ilat[keep]
-        out.append((label, _Cells(ilon, ilat, frac[keep] * np.cos(np.deg2rad(lat[ilat])))))
+        frac = frac[keep]
+        out.append((label, _Cells(ilon, ilat, frac * np.cos(np.deg2rad(lat[ilat])), frac)))
     return out
-
-
-def _missing(values, cat):
-    """True where ``values`` are the missing value of IMD files of this variable."""
-    if cat == 'rain':
-        return values == _RAIN_MISSING
-    if cat in ('tmin', 'tmax'):
-        # 99.9 as stored (float32) and as typed
-        return (values == _TEMP_MISSING) | (values == float(np.float32(_TEMP_MISSING)))
-    return np.zeros(values.shape, dtype=bool)          # GPM rain has none
 
 
 def _weighted_means(obj, cells):
@@ -908,6 +925,66 @@ def _region(obj, state=None, district=None, city=None, basin=None, subbasin=None
         labels, cells = [c.label for c in columns], _named_cells(obj, columns)
     values = _weighted_means(obj, cells)
     return pd.DataFrame(values, index=obj._time_index(values.shape[0]), columns=_list(labels))
+
+
+def _check_shapefile_exists(path):
+    """
+    ValueError if the shapefile of clip() does not exist: often a region
+    name given as the first argument (clip('Kerala')). The message names
+    the keyword for this name.
+    """
+    if not isinstance(path, (str, os.PathLike)):
+        return
+    path = os.fspath(path)
+    if isinstance(path, bytes) or path.startswith(('http://', 'https://')):
+        return
+    stem = os.path.splitext(path)[0]
+    if any(os.path.exists(p) for p in (path, stem + '.shp', stem + '.SHP')):
+        return
+    keyword = None
+    for t in (_STATE, _DISTRICT, _BASIN, _SUBBASIN):
+        try:
+            _resolve_region(t, path)
+        except AmbiguousRegionError:
+            pass
+        except RegionNotFoundError:
+            continue
+        keyword = _TYPES[t]
+        break
+    if keyword is not None:
+        hint = "For a region use clip({}={!r}).".format(keyword, path)
+    else:
+        hint = "For a region use clip(state=...), clip(district=...), clip(basin=...) or " \
+               "clip(subbasin=...)."
+    raise ValueError("There is no shapefile {!r}. {}".format(path, hint))
+
+
+def _clip_cells(obj, shapefile=None, state=None, district=None, basin=None, subbasin=None):
+    """
+    Cells (_Cells) of the one area of ``IMD.clip()`` on the object's grid:
+    the same cells and fractions that ``region()`` uses for it.
+    """
+    names = {'state': state, 'district': district, 'basin': basin, 'subbasin': subbasin}
+    given = {k for k, v in names.items() if v is not None}
+    if shapefile is not None:
+        given.add('shapefile')
+    if len(given) != 1 and given != {'state', 'district'}:
+        raise TypeError(_ONE_AREA)
+    if shapefile is not None:
+        if isinstance(shapefile, (builtins.list, tuple)):
+            raise TypeError("clip() takes one shapefile, not a list. All polygons of one "
+                            "shapefile form one area.")
+        _check_shapefile_exists(shapefile)
+        return _shapefile_cells(obj, shapefile, None, caller='clip')[0][1]
+    for keyword in sorted(given):
+        value = names[keyword]
+        if not isinstance(value, str):
+            raise TypeError("clip() takes one area: {}= must be a name, not {!r}. For several "
+                            "regions use region(), e.g. region({}=[...]).".format(
+                                keyword, value, keyword))
+    columns = _select(state=state, district=district, basin=basin, subbasin=subbasin,
+                      caller='clip')
+    return _named_cells(obj, columns, caller='clip')[0]
 
 
 ###############################################################################
@@ -1005,13 +1082,8 @@ def search(text, type=None, state=None, limit=20):
     >>> imd.regions.search('pun')
     >>> imd.regions.search('Rampur', type='city', state='Uttar Pradesh')
     """
-    try:
+    with _user_facing():
         return _search(text, type, state, limit)
-    except Exception as e:
-        error = _user_error(e)
-        if error is None:
-            raise
-    raise error from None
 
 
 def _search(text, type, state, limit):
@@ -1075,13 +1147,8 @@ def list(type, state=None, basin=None):
     >>> imd.regions.list('district', state='Kerala')
     >>> imd.regions.list('subbasin', basin='Godavari')
     """
-    try:
+    with _user_facing():
         return _list_names(type, state, basin)
-    except Exception as e:
-        error = _user_error(e)
-        if error is None:
-            raise
-    raise error from None
 
 
 def _list_names(type, state, basin):

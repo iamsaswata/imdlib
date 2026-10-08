@@ -140,26 +140,68 @@ def test_archive_rain_equals_overlay(rain, kwargs, layer, name, zip_name):
     print('{}: max |region - overlay| = {:.2e} mm'.format(name, err))
 
 
+def max_difference(a, b):
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    assert np.array_equal(np.isnan(a), np.isnan(b))
+    ok = ~np.isnan(a)
+    return float(np.max(np.abs(a[ok] - b[ok]))) if ok.any() else 0.0
+
+
+@pytest.mark.parametrize('var', ['rain', 'tmax'])
+@pytest.mark.parametrize('kwargs', [
+    dict(state='Kerala'), dict(state='Maharashtra'), dict(district='Pune'),
+    dict(district='Karaikal'), dict(district='Ratnagiri'), dict(basin='Godavari'),
+    dict(subbasin='Wainganga'), dict(state='Lakshadweep')])
+def test_clip_spatial_mean_equals_region(cache, var, kwargs):
+    data = imd.load(var, 2025, cache_dir=cache, offline=True)
+    clipped = data.clip(**kwargs)
+    assert data._data_pending and clipped._data_pending
+    err = max_difference(clipped.spatial_mean().iloc[:, 0], data.region(**kwargs).iloc[:, 0])
+    print('{} {}: max |clip().spatial_mean() - region()| = {:.1e}'.format(var, kwargs, err))
+    assert err <= 1e-12
+    assert clipped.region(**kwargs).equals(data.region(**kwargs))
+
+
 @pytest.mark.parametrize('kwargs, layer, name, zip_name', [
     (dict(state='Kerala'), 'STATE_BDY', 'KERALA', 'KERALA.zip'),
     (dict(district='Pune'), 'DISTRICT_BDY', 'PUNE', 'MAHARASHTRA.zip'),
     (dict(basin='Godavari'), None, 'Godavari', None),
 ])
-def test_close_to_clip_and_spatial_mean(rain, tmp_path, kwargs, layer, name, zip_name):
-    """clip() keeps the cells whose centre is inside: close to region(), not equal."""
+def test_clip_shapefile_equals_region(rain, tmp_path, kwargs, layer, name, zip_name):
+    """clip(shapefile) equals region(shapefile), and is close to the shipped weights."""
     gpd = gis()
     geom = cwc_basin(name) if layer is None else soi_polygon(layer, name, zip_name)
     shp = tmp_path / 'area.shp'
     gpd.GeoDataFrame(geometry=[geom], crs=4326).to_file(shp)
-    clipped = rain.copy()
-    clipped.clip(str(shp))
-    a = rain.region(**kwargs).iloc[:, 0]
-    b = clipped.spatial_mean().iloc[:, 0]
-    corr = np.corrcoef(a, b)[0, 1]
-    total = abs(a.sum() - b.sum()) / b.sum()
-    print('{}: daily correlation {:.4f}, annual total {:.1f} vs {:.1f} mm ({:.2%})'.format(
-        name, corr, a.sum(), b.sum(), total))
-    assert corr > 0.95 and total < 0.1
+    clipped = rain.clip(str(shp))
+    got = clipped.spatial_mean().iloc[:, 0]
+    err = max_difference(got, rain.region(shapefile=shp).iloc[:, 0])
+    print('{}: max |clip(shapefile).spatial_mean() - region(shapefile)| = {:.1e}'.format(
+        name, err))
+    assert err <= 1e-12
+    # Named region: same cells, fractions stored as float32
+    named = rain.clip(**kwargs)
+    assert np.array_equal(named.cell_fraction > 0, clipped.cell_fraction > 0)
+    assert np.allclose(named.cell_fraction, clipped.cell_fraction, rtol=0, atol=1e-6)
+    assert_same(got.values, named.spatial_mean().iloc[:, 0].values, scale=np.nanmax(got))
+
+
+def test_clip_reads_only_the_box(cache, monkeypatch):
+    from imdlib import lazy
+    boxes = []
+    chunks = lazy.GrdFiles._chunks
+
+    def spy(self, lon_idx, lat_idx, max_days=None):
+        boxes.append((lon_idx, lat_idx))
+        return chunks(self, lon_idx, lat_idx, max_days)
+    monkeypatch.setattr(lazy.GrdFiles, '_chunks', spy)
+    data = imd.load('rain', 2025, cache_dir=cache, offline=True)
+    pune = data.clip(district='Pune')
+    assert boxes == []
+    pune.data
+    assert len(boxes) == 1 and pune.data.shape == (365,) + pune.cell_fraction.shape
+    lon, lat = boxes[0]
+    assert (lon.stop - lon.start, lat.stop - lat.start) == pune.cell_fraction.shape
 
 
 def test_tiny_district_on_1_degree_temperature(cache):
@@ -222,6 +264,11 @@ def test_realtime_temperature(cache):
     clipped.lon_array, clipped.lat_array = clipped.lon_array[i0:i1], clipped.lat_array[j0:j1]
     assert clipped.data[0, 0, 0] != np.float32(99.9)
     assert clipped.region(**kw).equals(full)
+    # clip() and spatial_mean() use the missing value too
+    for district in kw['district']:
+        err = max_difference(data.clip(district=district).spatial_mean().iloc[:, 0],
+                             data.region(district=district).iloc[:, 0])
+        assert err <= 1e-12
     if GIS and os.path.isdir(os.path.join(GIS, 'DISTRICTS')):
         geom = soi_polygon('DISTRICT_BDY', 'PUNE', 'MAHARASHTRA.zip')
         eager = data.copy()
