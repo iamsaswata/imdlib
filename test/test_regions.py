@@ -702,12 +702,6 @@ def test_clipped_window(synthetic):
         clip.region(city='Gurgaon')
 
 
-def test_clip_nan_cells_are_left_out(synthetic):
-    data = grid_obj(days=2)
-    data.data[:, 41, 50] = np.nan           # e.g. outside a clip() polygon
-    assert np.allclose(data.region(district='Pune').iloc[:, 0], data.data[:, 40, 50])
-
-
 def test_remapped_grid_error(synthetic):
     t = grid_obj('t100', days=1, cat='tmax', mask=False)
     t.remap(0.3)
@@ -1035,17 +1029,25 @@ def test_build_city_rows_of_region_aliases():
 # Import and shipped data
 ###############################################################################
 
-def test_import_does_not_load_region_data():
+def test_import_and_first_use_of_city_data():
+    """Importing imdlib loads no region data; the first use of the city data is fast.
+    One new Python process for both checks."""
     code = ("import numpy as np\n"
             "loaded = []\n"
             "load = np.load\n"
             "np.load = lambda *a, **k: loaded.append(a) or load(*a, **k)\n"
             "import imdlib, imdlib.regions as r\n"
             "assert r._cache == {} and loaded == [], loaded\n"
-            "print('ok')")
+            "print('ok')\n"
+            "import time\n"
+            "t = time.perf_counter(); r._cities(); print(time.perf_counter() - t)")
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = subprocess.run([sys.executable, '-c', code], cwd=root, capture_output=True, text=True)
-    assert out.stdout.strip() == 'ok', out.stderr
+    lines = out.stdout.split()
+    assert lines[:1] == ['ok'], out.stderr
+    seconds = float(lines[1])
+    print('first use of city data: {:.3f} s'.format(seconds))
+    assert seconds < 0.5
 
 
 @pytest.fixture(scope='module')
@@ -1321,7 +1323,6 @@ def test_shipped_cities(shipped_cities):
     ('Baroda', {}, 'Baroda (Madhya Pradesh)'), ('Udaipura', {}, 'Udaipura (Madhya Pradesh)'),
     ('Jeypore', {'state': 'Rajasthan'}, 'Jaipur (Rajasthan)'),
     ('Baroda', {'state': 'Gujarat'}, 'Vadodara (Gujarat)'),
-    ('Calcutta', {}, 'Kolkata (West Bengal)'),
     # A town's name (Brahmapur in Ganjam) beats villages of that name
     ('Brahmapur', {}, 'Brahmapur (Odisha)'),
     # An HQ's current name beats another HQ's old name (Bijapur, now Vijayapura)

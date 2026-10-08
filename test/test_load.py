@@ -5,6 +5,7 @@ get_data / get_real_data / open_data / open_real_data.
 No network access: requests.post is replaced by a fake server.
 """
 import array
+import functools
 import hashlib
 import json
 import os
@@ -41,8 +42,11 @@ def days_in(year):
     return 366 if imd.LeapYear(year) else 365
 
 
+@functools.lru_cache(maxsize=16)
 def grd_bytes(var, days, source='archive', seed=0):
-    """Synthetic IMD file content (float32, days x lat x lon, C order)."""
+    """Synthetic IMD file content (float32, days x lat x lon, C order).
+
+    Cached: the content is deterministic and returned as immutable bytes."""
     nlat, nlon = GRID[(source, var)]
     rng = np.random.default_rng(seed)
     if var == 'rain_gpm':
@@ -51,6 +55,7 @@ def grd_bytes(var, days, source='archive', seed=0):
         arr = rng.gamma(0.5, 5.0, (days, nlat, nlon)).astype('<f4')
         arr[:, :5, :5] = -999.0       # ocean
         arr[:, 10, 10] = 0.0          # boundary cell without rain
+        arr[0, 20, 20] = 0.0          # dry on the first day only: still a land cell
     else:
         arr = (15.0 + 20.0 * rng.random((days, nlat, nlon))).astype('<f4')
         arr[:, :3, :3] = 99.9         # sentinel
@@ -332,24 +337,15 @@ def test_proxies_are_passed(isolated, server):
 # Returned object
 ###############################################################################
 
-def test_load_matches_open_data(tmp_path, server):
-    yw = tmp_path / 'yearwise'
-    for var, ext in (('rain', '.grd'), ('tmax', '.GRD')):
-        (yw / var).mkdir(parents=True)
-        for year in (2019, 2020):
-            (yw / var / '{}{}'.format(year, ext)).write_bytes(year_bytes(var, year))
+def test_load_offline_reuse_and_coordinates(server):
+    # The values are compared with open_data() in test_lazy.py
+    # (test_archive_rain_same_as_open_data, test_archive_temp_same_as_open_data)
     server(archive_server())
-    for var in ('rain', 'tmax'):
-        a = imd.load(var, 2019, 2020, progress=False)
-        b = imd.open_data(var, 2019, 2020, 'yearwise', str(yw))
-        assert a.data.dtype == np.float64
-        assert np.array_equal(a.data, b.data)
-        assert np.array_equal(a.lat_array, b.lat_array)
-        assert np.array_equal(a.lon_array, b.lon_array)
-        assert np.array_equal(a.land_mask, b.land_mask)
-        assert (a.cat, a.start_day, a.end_day, a.no_days) == \
-            (b.cat, b.start_day, b.end_day, b.no_days) == (var, '2019-01-01', '2020-12-31', 731)
+    imd.load('rain', 2019, 2020, progress=False)
     rain = imd.load('rain', 2019, 2020, offline=True)
+    assert rain.data.dtype == np.float64
+    assert (rain.cat, rain.start_day, rain.end_day, rain.no_days) == \
+        ('rain', '2019-01-01', '2020-12-31', 731)
     assert rain.data.shape == (731, 135, 129)
     assert rain.lat_array[0] == 6.5 and rain.lat_array[-1] == 38.5
     assert rain.lon_array[0] == 66.5 and rain.lon_array[-1] == 100.0
@@ -521,21 +517,10 @@ def test_progress_tty_bar(capsys, monkeypatch):
     assert out.endswith('\n')
 
 
-def test_memory_warning(isolated, server, monkeypatch):
+def test_memory_warning():
+    # When the warning comes (at the full read) is tested in test_lazy.py
     with pytest.warns(UserWarning, match=r"about 7\.2 GB"):
         lazy.warn_memory('rain', 45656, 45656, 129 * 135)
-    put_archive(isolated, 'tmax', 2020)
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter('error')
-        imd.load('tmax', 2020).data
-    # The warning comes when the data is read, not from load()
-    monkeypatch.setattr(lazy, 'MEMORY_WARNING', 1e6)
-    with warnings.catch_warnings():
-        warnings.simplefilter('error')
-        data = imd.load('tmax', 2020)
-    with pytest.warns(UserWarning, match="shorter period"):
-        data.data
 
 
 ###############################################################################
