@@ -7,9 +7,10 @@ import os
 import requests
 import xarray as xr
 from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename, parse_date_input
-from imdlib.util import ARCHIVE_GRIDS, ARCHIVE_URLS, save_download, read_grd
+from imdlib.util import GRIDS, ARCHIVE_GRID, ARCHIVE_URLS, save_download, read_grd
+from imdlib.util import ARCHIVE_GRIDS  # noqa: F401 (was importable from here)
 from imdlib.util import _missing, _check_same_cells, land_mask_of, mask_needs_all_days
-from imdlib.util import COORD_TOL
+from imdlib.util import COORD_TOL, identify_grid
 from datetime import datetime
 # Added 14-05-2023 #
 from scipy.interpolate import griddata 
@@ -89,7 +90,7 @@ class IMD(Compute):
         self.land_mask = land_mask
         # Fraction of each cell inside the region of clip(), shape (lon, lat)
         self.cell_fraction = None
-        # IMD grid (a key of regions._GRIDS or 'gpm') that clip() cut the data from
+        # IMD grid (a key of util.GRIDS) that clip() cut the data from
         self._grid = None
         # Variable metadata — defaults from raw data type,
         # overridden by compute/heatwave/climatology/etc.
@@ -543,8 +544,8 @@ class IMD(Compute):
         def step(values):
             if len(values) > 1:
                 return float(values[1] - values[0])
-            key = self._grid if self._grid is not None else regions._identify_grid(self)[0]
-            return float(dict(regions._GRIDS, gpm=regions._GPM)[key].step)
+            key = self._grid if self._grid is not None else identify_grid(self)[0]
+            return float(GRIDS[key].step)
         dx, dy = step(self.lon_array), step(self.lat_array)
         return Affine(dx, 0.0, float(self.lon_array[0]) - dx / 2,
                       0.0, dy, float(self.lat_array[0]) - dy / 2)
@@ -1259,7 +1260,7 @@ class IMD(Compute):
         else:
             land_mask = np.array(self.land_mask[box]) & keep
         try:
-            grid = regions._identify_grid(self)[0]
+            grid = identify_grid(self)[0]
         except ValueError:
             grid = None               # shapefile on another grid
         new = self._new(data, self.lat_array[j0:j1].copy(), self.lon_array[i0:i1].copy(),
@@ -1383,20 +1384,6 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
     data (``load``).
     """
 
-    # Parameters about IMD grid from:
-    # http://www.imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
-    #######################################
-    lat_size_rain = 129
-    lon_size_rain = 135
-    lat_rain = np.linspace(6.5, 38.5, lat_size_rain)
-    lon_rain = np.linspace(66.5, 100.0, lon_size_rain)
-
-    lat_size_temp = 31
-    lon_size_temp = 31
-    lat_temp = np.linspace(7.5, 37.5, lat_size_temp)
-    lon_temp = np.linspace(67.5, 97.5, lon_size_temp)
-    #######################################
-
     # Full-year boundaries for loading complete year files
     full_start_day = f"{start_yr_int}-01-01"
     full_end_day = f"{end_yr_int}-12-31"
@@ -1408,15 +1395,12 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
     no_days = total_days(start_day, end_day)
 
     # Decide which variable we are looking into
-    if var_type == 'rain':
-        lat_size_class = lat_size_rain
-        lon_size_class = lon_size_rain
-    elif var_type == 'tmin' or var_type == 'tmax':
-        lat_size_class = lat_size_temp
-        lon_size_class = lon_size_temp
-    else:
+    # tuple(): an unhashable var_type gets the same error as before, not a TypeError
+    if var_type not in tuple(ARCHIVE_GRID):
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
+    grid = GRIDS[ARCHIVE_GRID[var_type]]
+    lat_size_class, lon_size_class = grid.shape
 
     if lazy:
         files = [(fname_of_year(i), 366 if LeapYear(i) else 365)
@@ -1424,10 +1408,7 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
         source = GrdFiles(var_type, files, lat_size_class, lon_size_class,
                           total_days(full_start_day, start_day) - 1, no_days,
                           land_mask=True)
-        if var_type == 'rain':
-            data = IMD(None, var_type, start_day, end_day, no_days, lat_rain, lon_rain)
-        else:
-            data = IMD(None, var_type, start_day, end_day, no_days, lat_temp, lon_temp)
+        data = IMD(None, var_type, start_day, end_day, no_days, grid.lat, grid.lon)
         data._attach_source(source)
         return data
 
@@ -1469,20 +1450,8 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
     land_mask = land_mask_of(var_type, [all_data], no_days)
 
     # Create a IMD object
-    if var_type == 'rain':
-        data = IMD(all_data, 'rain', start_day, end_day, no_days,
-                   lat_rain, lon_rain, land_mask)
-    elif var_type == 'tmin':
-        data = IMD(all_data, 'tmin', start_day, end_day, no_days,
-                   lat_temp, lon_temp, land_mask)
-    elif var_type == 'tmax':
-        data = IMD(all_data, 'tmax', start_day, end_day, no_days,
-                   lat_temp, lon_temp, land_mask)
-    else:
-        raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
-
-    return data
+    return IMD(all_data, var_type, start_day, end_day, no_days,
+               grid.lat, grid.lon, land_mask)
 
 
 def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub_dir=False, proxies=None):
@@ -1622,10 +1591,9 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             response.raise_for_status()
 
             # Saving file (only if it has exactly the expected size)
-            nlat, nlon = ARCHIVE_GRIDS[var_type]
             days_in_year = 366 if LeapYear(int(year)) else 365
             save_download(response.content, fname,
-                          days_in_year * nlat * nlon * 4,
+                          GRIDS[ARCHIVE_GRID[var_type]].file_size(days_in_year),
                           "{} {}".format(var_type, year),
                           empty_msg="{} {} is not published yet by IMD (the server "
                                     "returned an empty file). Nothing was saved."

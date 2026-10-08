@@ -17,7 +17,8 @@ from imdlib.core import _open_archive
 # Read-only alias: the threshold is set in imdlib.lazy (MEMORY_WARNING there)
 from imdlib.lazy import MEMORY_WARNING  # noqa: F401
 from imdlib.real import _open_realtime
-from imdlib.util import (ARCHIVE_GRIDS, ARCHIVE_URLS, REALTIME_GRIDS, REALTIME_URLS,
+from imdlib.util import (GRIDS, ARCHIVE_GRID, ARCHIVE_GRIDS, ARCHIVE_URLS, REALTIME_GRID,
+                         REALTIME_GRIDS, REALTIME_URLS,
                          DataNotAvailableError, DownloadError, LeapYear,
                          check_download_size, parse_date_input)
 from imdlib.version import __version__
@@ -131,13 +132,13 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
 
     if source == 'archive':
         _check_archive_period(var, start_yr, end_yr, root, today)
-        nlat, nlon = ARCHIVE_GRIDS[var]
+        grid = GRIDS[ARCHIVE_GRID[var]]
         url, field = ARCHIVE_URLS[var]
         files = [_File(root, 'archive', var, year, str(year),
-                       (366 if LeapYear(year) else 365) * nlat * nlon * 4, url, field)
+                       grid.file_size(366 if LeapYear(year) else 365), url, field)
                  for year in range(start_yr, end_yr + 1)]
     else:
-        nlat, nlon = REALTIME_GRIDS[var]
+        grid = GRIDS[REALTIME_GRID[var]]
         url, field = REALTIME_URLS[var]
         dates = pd.date_range(start_day, end_day, freq='D')
         future = [d for d in dates if d.date() > today]
@@ -146,7 +147,7 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
                 "Real-time {} is not available for {}: these dates are in the future."
                 .format(var, _format_days(future)))
         files = [_File(root, 'realtime', var, d, d.strftime('%Y-%m-%d'),
-                       nlat * nlon * 4, url, field, d.strftime('%d%m%Y'))
+                       grid.file_size(), url, field, d.strftime('%d%m%Y'))
                  for d in dates]
 
     missing = [f for f in files if not f.is_cached()]
@@ -218,10 +219,10 @@ def _check_archive_period(var, start_yr, end_yr, root, today):
 
 def _archive_hint(var, year, start_yr, root):
     """Advice after `year` was found not published."""
-    nlat, nlon = ARCHIVE_GRIDS[var]
     prev = year - 1
     known = _File(root, 'archive', var, prev, str(prev),
-                  (366 if LeapYear(prev) else 365) * nlat * nlon * 4, '', '').is_cached()
+                  GRIDS[ARCHIVE_GRID[var]].file_size(366 if LeapYear(prev) else 365),
+                  '', '').is_cached()
     if known:
         use = "Use end={}.".format(prev) if start_yr < year else "Use {}.".format(prev)
         return ("Latest available: {}. {} Archive ends {}-12-31. Later days are available "
