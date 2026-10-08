@@ -39,8 +39,9 @@ Use ``progress=False`` to turn the output off.
 - ``offline=True`` never uses the network. If files are missing from the cache, it raises an
   error that lists them.
 
-- The loaded data is held in memory. For long periods, especially of rainfall, a warning shows
-  the estimated memory needed. If loading fails or is slow, load a shorter period.
+- ``load()`` reads the files when the data is first used. The data is then held in memory. For
+  long periods, especially of rainfall, a warning shows the estimated memory needed. If loading
+  fails or is slow, load a shorter period.
 
 Real-time data
 --------------

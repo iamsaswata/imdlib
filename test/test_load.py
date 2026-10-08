@@ -21,7 +21,7 @@ import pytest
 import requests
 
 import imdlib as imd
-from imdlib import cache, loader
+from imdlib import cache, lazy, loader
 from imdlib.util import DataNotAvailableError, DownloadError
 
 ARCHIVE_URL = {'rain': 'https://imdpune.gov.in/cmpg/Griddata/rainfall.php',
@@ -523,15 +523,19 @@ def test_progress_tty_bar(capsys, monkeypatch):
 
 def test_memory_warning(isolated, server, monkeypatch):
     with pytest.warns(UserWarning, match=r"about 7\.2 GB"):
-        loader._warn_memory('rain', 45656, 45656, 129 * 135)
+        lazy.warn_memory('rain', 45656, 45656, 129 * 135)
     put_archive(isolated, 'tmax', 2020)
     import warnings
     with warnings.catch_warnings():
         warnings.simplefilter('error')
-        imd.load('tmax', 2020)
-    monkeypatch.setattr(loader, 'MEMORY_WARNING', 1e6)
+        imd.load('tmax', 2020).data
+    # The warning comes when the data is read, not from load()
+    monkeypatch.setattr(lazy, 'MEMORY_WARNING', 1e6)
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        data = imd.load('tmax', 2020)
     with pytest.warns(UserWarning, match="shorter period"):
-        imd.load('tmax', 2020)
+        data.data
 
 
 ###############################################################################

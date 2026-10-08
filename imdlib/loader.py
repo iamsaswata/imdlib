@@ -7,7 +7,6 @@ import os
 import sys
 import threading
 import time
-import warnings
 from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
@@ -34,8 +33,6 @@ TIMEOUT = 300
 # Waits (s) before each retry after a connection error, timeout or server error
 RETRY_WAITS = (5, 15, 45)
 CHUNK_SIZE = 64 * 1024
-# Warn when the data to be loaded needs more memory than this (bytes)
-MEMORY_WARNING = 2e9
 
 
 def load(var, start, end=None, *, source='archive', cache_dir=None, offline=False,
@@ -46,6 +43,10 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
     Files missing from the local cache are downloaded (one at a time, with
     progress), checked for their exact size, and stored in the cache. Later
     calls for the same period use the cached files and do not download again.
+
+    ``load()`` checks the request and downloads the files, but reads them
+    only when the data is first used (e.g. ``data.data``, ``get_xarray()``
+    or ``compute()``).
 
     Parameters
     ----------
@@ -88,6 +89,7 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
     Returns
     -------
     IMD object
+        Its data is read from the cached files on first use.
 
     Raises
     ------
@@ -100,7 +102,9 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
         A download failed after retries, or the file received has the
         wrong size.
     FileNotFoundError
-        ``offline=True`` and files are missing from the cache.
+        ``offline=True`` and files are missing from the cache. Also raised
+        on first use of the data if its files were removed from the cache
+        after ``load()``.
 
     Examples
     --------
@@ -130,10 +134,6 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
         files = [_File(root, 'archive', var, year, str(year),
                        (366 if LeapYear(year) else 365) * nlat * nlon * 4, url, field)
                  for year in range(start_yr, end_yr + 1)]
-        # All days of the years are read, then sliced
-        days_read = sum(f.expected for f in files) // (nlat * nlon * 4)
-        days = (pd.Timestamp(end_day) - pd.Timestamp(start_day)).days + 1
-        mask_days = days if (var == 'rain' and days >= 365) else 0
     else:
         nlat, nlon = REALTIME_GRIDS[var]
         url, field = REALTIME_URLS[var]
@@ -146,10 +146,6 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
         files = [_File(root, 'realtime', var, d, d.strftime('%Y-%m-%d'),
                        nlat * nlon * 4, url, field, d.strftime('%d%m%Y'))
                  for d in dates]
-        days_read = len(dates)
-        mask_days = 0
-
-    _warn_memory(var, days_read, mask_days, nlat * nlon)
 
     missing = [f for f in files if not f.is_cached()]
     if missing:
@@ -170,11 +166,12 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
         if unavailable:
             raise DataNotAvailableError(_realtime_message(var, unavailable, today))
 
+    # The files are read when the data is first used
     paths = {f.period: f.path for f in files}
     if source == 'archive':
         return _open_archive(var, start_day, end_day, start_yr, end_yr,
-                             lambda year: paths[year])
-    return _open_realtime(var, start_day, end_day, lambda day: paths[day])
+                             lambda year: paths[year], lazy=True)
+    return _open_realtime(var, start_day, end_day, lambda day: paths[day], lazy=True)
 
 
 class _File:
@@ -230,15 +227,6 @@ def _archive_hint(var, year, start_yr, root):
     use = "e.g. end={}".format(prev) if start_yr < year else "{} or before".format(prev)
     return ("Use an earlier year ({}). Days after the last published year are available "
             "as provisional real-time data: source='realtime'.".format(use))
-
-
-def _warn_memory(var, days, mask_days, cells):
-    need = days * cells * 8 + mask_days * cells
-    if need > MEMORY_WARNING:
-        warnings.warn(
-            "Loading {} for {:,} days needs about {:.1f} GB of memory (float64 data). "
-            "If this fails or is slow, load a shorter period.".format(var, days, need / 1e9),
-            stacklevel=3)
 
 
 def _format_days(days):

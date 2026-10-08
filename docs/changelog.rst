@@ -2,6 +2,12 @@ Changelog History
 =================
 
 
+Unreleased
+----------
+
+* ``load()`` now reads the files when the data is first used, so it returns quickly and the memory warning appears only when the data is read. Results are unchanged.
+
+
 v0.2.0 (06 October 2026)
 ------------------------
 
