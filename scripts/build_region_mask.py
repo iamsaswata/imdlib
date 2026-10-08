@@ -41,9 +41,13 @@ import xarray as xr
 import geopandas as gpd
 from scipy.spatial import cKDTree
 import os
+import sys
 import time
 import urllib.request
 import zipfile
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from imdlib.util import GRIDS  # noqa: E402
 
 
 # ====================================================================
@@ -52,11 +56,11 @@ import zipfile
 ELEV_THRESHOLD = 1000.0     # meters — grid cells above this are "hilly"
 COAST_DISTANCE = 50.0       # km — grid cells within this are "coastal"
 
-# IMD grid definitions (must match imdlib exactly)
-LAT_TEMP = np.linspace(7.5, 37.5, 31)     # 1.0° temperature grid
-LON_TEMP = np.linspace(67.5, 97.5, 31)
-LAT_RAIN = np.linspace(6.5, 38.5, 129)    # 0.25° rainfall grid
-LON_RAIN = np.linspace(66.5, 100.0, 135)
+# IMD grids, from imdlib
+TEMP_GRID = GRIDS['t100']                 # 1.0° temperature grid
+RAIN_GRID = GRIDS['r025']                 # 0.25° rainfall grid
+LAT_TEMP, LON_TEMP = TEMP_GRID.lat, TEMP_GRID.lon
+LAT_RAIN, LON_RAIN = RAIN_GRID.lat, RAIN_GRID.lon
 
 # Output filenames
 OUTPUT_TEMP = "region_mask_100.npy"
@@ -260,7 +264,7 @@ def main():
     print(f"\n[3] Classifying 1.0° temperature grid ({len(LON_TEMP)}x{len(LAT_TEMP)})...")
     t0 = time.time()
     mask_temp = classify_grid(
-        LAT_TEMP, LON_TEMP, 1.0,
+        LAT_TEMP, LON_TEMP, TEMP_GRID.step,
         dem_lat, dem_lon, dem_elev, tree, points, scale_lon
     )
     print(f"  Done in {time.time()-t0:.1f}s")
@@ -268,7 +272,7 @@ def main():
     print(f"\n[4] Classifying 0.25° rain grid ({len(LON_RAIN)}x{len(LAT_RAIN)})...")
     t0 = time.time()
     mask_rain = classify_grid(
-        LAT_RAIN, LON_RAIN, LAT_RAIN[1] - LAT_RAIN[0],
+        LAT_RAIN, LON_RAIN, RAIN_GRID.step,
         dem_lat, dem_lon, dem_elev, tree, points, scale_lon
     )
     print(f"  Done in {time.time()-t0:.1f}s")

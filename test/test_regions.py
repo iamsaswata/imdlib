@@ -17,6 +17,7 @@ import pandas as pd
 import pytest
 
 import imdlib as imd
+from imdlib import util
 from imdlib import regions
 from imdlib.core import IMD
 from imdlib.regions import _STATE as STATE, _DISTRICT as DISTRICT, _BASIN as BASIN
@@ -634,6 +635,38 @@ def test_missing_values(synthetic):
 # Grids: GPM offsets, clipped windows, remapped data
 ###############################################################################
 
+def test_grid_table():
+    # Coordinates are bit-identical to the linspace literals the readers used before
+    for key, grid in util.GRIDS.items():
+        assert np.array_equal(grid.lat, LAT[key]) and grid.lat.dtype == LAT[key].dtype, key
+        assert np.array_equal(grid.lon, LON[key]) and grid.lon.dtype == LON[key].dtype, key
+    assert util.ARCHIVE_GRIDS == {'rain': (129, 135), 'tmin': (31, 31), 'tmax': (31, 31)}
+    assert util.REALTIME_GRIDS == {'rain': (129, 135), 'rain_gpm': (281, 241),
+                                   'tmin': (61, 61), 'tmax': (61, 61)}
+    assert util.GRIDS['r025'].file_size(365) == 365 * 129 * 135 * 4
+    assert util.GRIDS['gpm'].file_size() == 281 * 241 * 4
+    assert regions._GPM_OFFSET == (66, 146)
+    gpm, r025 = util.GRIDS['gpm'], util.GRIDS['r025']
+    assert np.array_equal(gpm.lon[66:66 + 135], r025.lon)
+    assert np.array_equal(gpm.lat[146:146 + 129], r025.lat)
+
+
+@pytest.mark.parametrize('src, var, key', [('archive', 'rain', 'r025'), ('archive', 'tmax', 't100'),
+                                           ('realtime', 'rain', 'r025'),
+                                           ('realtime', 'tmin', 't050'),
+                                           ('realtime', 'rain_gpm', 'gpm')])
+def test_identify_grid(src, var, key):
+    grid = util.GRIDS[util.ARCHIVE_GRID[var] if src == 'archive' else util.REALTIME_GRID[var]]
+    assert grid is util.GRIDS[key]
+    obj = IMD(None, var, '2020-01-01', '2020-01-01', 1, grid.lat, grid.lon)
+    assert util.identify_grid(obj) == (key, 0, 0)
+    box = IMD(None, var, '2020-01-01', '2020-01-01', 1, grid.lat[3:7], grid.lon[2:5])
+    assert util.identify_grid(box) == (key, 2, 3)
+    with pytest.raises(ValueError, match=r'^clip\(\) needs data on an IMD grid'):
+        util.identify_grid(IMD(None, var, '2020-01-01', '2020-01-01', 1, grid.lat + 0.1,
+                               grid.lon), 'clip')
+
+
 def test_gpm_offsets(synthetic):
     g = grid_obj('gpm', cat='rain_gpm', mask=False)
     out = g.region(state=['Alpha', 'Beta'])
@@ -936,7 +969,7 @@ def test_build_uses_only_cells_next_to_a_place():
         import build_regions as b
     finally:
         sys.path.pop(0)
-    grid = regions._Grid(0.0, 0.0, 1.0, 10, 10)
+    grid = util.Grid(0.0, 0.0, 1.0, 10, 10)
     mask = np.zeros((10, 10), bool)
     mask[5, 5] = True
     data = b.DataCells(grid, mask)

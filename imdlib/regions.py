@@ -27,7 +27,7 @@ from collections import namedtuple
 import numpy as np
 import pandas as pd
 
-from imdlib.util import COORD_TOL, _missing
+from imdlib.util import GRIDS, NotIMDGridError, _missing, identify_grid
 
 # list() is left out, so that 'from imdlib.regions import *' keeps the builtin list
 __all__ = ['search', 'info', 'RegionError', 'RegionNotFoundError', 'AmbiguousRegionError']
@@ -41,42 +41,19 @@ _STATE, _DISTRICT, _BASIN, _SUBBASIN = range(4)
 _MIN_FRACTION = 1e-4
 
 
-class _Grid(namedtuple('_Grid', 'lon0 lat0 step nlon nlat')):
-    """A regular IMD grid: centre of the first cell, spacing (degrees), size."""
-    __slots__ = ()
-
-    @property
-    def lon(self):
-        return self.lon0 + self.step * np.arange(self.nlon)
-
-    @property
-    def lat(self):
-        return self.lat0 + self.step * np.arange(self.nlat)
-
-    def edges(self):
-        """Cell edges as (longitudes, sin(latitudes))."""
-        lon = self.lon0 - self.step / 2 + self.step * np.arange(self.nlon + 1)
-        lat = self.lat0 - self.step / 2 + self.step * np.arange(self.nlat + 1)
-        return lon, np.sin(np.deg2rad(lat))
-
-
-# Grids of the shipped weights. Cell index in the shipped data: ilon * nlat + ilat
-_GRIDS = {
-    'r025': _Grid(66.5, 6.5, 0.25, 135, 129),    # rain, archive and real-time
-    't100': _Grid(67.5, 7.5, 1.0, 31, 31),       # temperature, archive
-    't050': _Grid(67.5, 7.5, 0.5, 61, 61),       # temperature, real-time
-}
+# Grids of the shipped weights (keys of util.GRIDS).
+# Cell index in the shipped data: ilon * nlat + ilat
+_GRIDS = {key: GRIDS[key] for key in ('r025', 't100', 't050')}
 # GPM rain is cell-aligned with r025 and uses its weights: GPM index = r025 index + offset
-_GPM = _Grid(50.0, -30.0, 0.25, 241, 281)
-_GPM_OFFSET = (66, 146)
+_GPM = GRIDS['gpm']
+_GPM_OFFSET = (int(round((_GRIDS['r025'].lon0 - _GPM.lon0) / _GPM.step)),
+               int(round((_GRIDS['r025'].lat0 - _GPM.lat0) / _GPM.step)))
 # Cell index of a city outside a grid
 _NO_CELL = 65535
 
 _ONE_TYPE = "Give exactly one of state=, district=, city=, basin=, subbasin=, shapefile=."
 _ONE_AREA = ("Give exactly one area: state=, district=, basin=, subbasin= or a shapefile "
              "(state= can be added to district= to narrow the match).")
-_NOT_IMD_GRID = ("{0}() needs data on an IMD grid (0.25°, 0.5°, 1.0°, GPM 0.25°). "
-                 "For other grids use {0}(shapefile=...).")
 
 
 ###############################################################################
@@ -98,15 +75,16 @@ class AmbiguousRegionError(RegionError):
 def _is_user_error(exc):
     """
     True if ``exc`` reports a wrong input: a region error, or a TypeError,
-    ValueError or ImportError raised by the checks in this module.
+    ValueError or ImportError raised by the checks in this module, or
+    NotIMDGridError (data not on an IMD grid).
     """
     if not isinstance(exc, (TypeError, ValueError, ImportError)):
         return False
     tb = exc.__traceback__
     while tb is not None and tb.tb_next is not None:
         tb = tb.tb_next
-    return isinstance(exc, RegionError) or (tb is not None and
-                                            tb.tb_frame.f_globals.get('__name__') == __name__)
+    return isinstance(exc, (RegionError, NotIMDGridError)) or (
+        tb is not None and tb.tb_frame.f_globals.get('__name__') == __name__)
 
 
 class _user_facing:
@@ -188,7 +166,7 @@ def _cell_fractions(geom, lon_edges, y_edges):
     geom : shapely geometry
         Polygons in x = lon, y = sin(lat).
     lon_edges, y_edges : 1D arrays
-        Cell edges (increasing), as returned by :meth:`_Grid.edges`.
+        Cell edges (increasing), as returned by ``util.Grid.edges()``.
 
     Returns
     -------
@@ -755,45 +733,9 @@ def _select(state=None, district=None, city=None, basin=None, subbasin=None, by=
 _Cells = namedtuple('_Cells', 'lon lat weight fraction')
 
 
-def _offset(values, start, step, n):
-    """Offset of ``values`` as a contiguous window of a regular axis, or None."""
-    values = np.asarray(values, dtype=float)
-    if values.ndim != 1 or not 0 < len(values) <= n:
-        return None
-    k = (values[0] - start) / step
-    o = int(round(k))
-    if abs(k - o) > COORD_TOL or o < 0 or o + len(values) > n:
-        return None
-    if not np.allclose(values, start + step * np.arange(o, o + len(values)), rtol=0,
-                       atol=COORD_TOL):
-        return None
-    return o
-
-
-def _identify_grid(obj, caller='region'):
-    """
-    (grid key, lon offset, lat offset) of the object: an IMD grid or a window
-    of it (e.g. after clip()). The key is one of _GRIDS or 'gpm'. ``caller``
-    is the public method named in the error.
-    """
-    grids = dict(_GRIDS, gpm=_GPM)
-    order = ['gpm'] + _list(_GRIDS) if obj.cat == 'rain_gpm' else _list(_GRIDS) + ['gpm']
-    # The grid that clip() cut the data from first: a box one cell wide fits several grids
-    hint = getattr(obj, '_grid', None)
-    if hint in grids:
-        order = [hint] + [k for k in order if k != hint]
-    for key in order:
-        g = grids[key]
-        i = _offset(obj.lon_array, g.lon0, g.step, g.nlon)
-        j = _offset(obj.lat_array, g.lat0, g.step, g.nlat)
-        if i is not None and j is not None:
-            return key, i, j
-    raise ValueError(_NOT_IMD_GRID.format(caller))
-
-
 def _named_cells(obj, columns, caller='region'):
     """Cells of named regions and cities on the object's grid."""
-    key, i_off, j_off = _identify_grid(obj, caller)
+    key, i_off, j_off = identify_grid(obj, caller)
     weights = 'r025' if key == 'gpm' else key
     grid = _GRIDS[weights]
     if key == 'gpm':

@@ -24,7 +24,7 @@ import numpy as np
 from scipy.stats import gamma as gamma_dist
 from scipy.stats import norm
 
-from imdlib.util import COORD_TOL, _check_same_cells
+from imdlib.util import COORD_TOL, GRIDS, ARCHIVE_GRID, _check_same_cells
 
 
 # ====================================================================
@@ -560,7 +560,7 @@ def spei(imd_obj, **kwargs):
     # --- Remap PET from 1° to 0.25° using imdlib remap ---
     pet_obj = IMD(pet_100, 'rain', imd_obj.start_day, imd_obj.end_day,
                   pet_100.shape[0], tmax_obj.lat_array, tmax_obj.lon_array)
-    pet_obj.remap(0.25)
+    pet_obj.remap(GRIDS[ARCHIVE_GRID['rain']].step)
     pet_025_raw = pet_obj.data
 
     # --- Align PET to rainfall grid by coordinate matching ---

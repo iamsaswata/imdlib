@@ -18,10 +18,12 @@ References:
 import numpy as np
 import os
 
-from imdlib.util import _missing
+from imdlib.util import ARCHIVE_GRID, _missing, identify_grid
 
 # Path to bundled region mask
 _DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+# Grid of the region mask: the 1.0 degree archive temperature grid
+_MASK_GRID = ARCHIVE_GRID['tmax']
 
 
 def _load_region_mask():
@@ -95,14 +97,13 @@ def _box_of(imd_obj, grid_shape):
     (lon slice, lat slice) of the data in the 1.0 degree temperature grid of
     shape ``grid_shape``: the whole grid, or the box of clipped data.
     """
-    from imdlib.regions import _identify_grid
     nlon, nlat = len(imd_obj.lon_array), len(imd_obj.lat_array)
     if (nlon, nlat) != tuple(grid_shape):
         try:
-            key, i, j = _identify_grid(imd_obj)
+            key, i, j = identify_grid(imd_obj)
         except ValueError:
             key = None
-        if key != 't100':
+        if key != _MASK_GRID:
             raise ValueError('Heat/cold wave detection requires data on the 1.0 degree '
                              'IMD temperature grid')
         return slice(i, i + nlon), slice(j, j + nlat)
