@@ -17,6 +17,7 @@ import xarray as xr
 
 import imdlib as imd
 from imdlib import regions
+from imdlib.core import IMD
 from test_load import isolated  # noqa: F401  (autouse: isolated cache, no network)
 from test_lazy import reads, put_archive_eager_names, eager, put_realtime  # noqa: F401
 from test_regions import synthetic, grid_obj, cells_of, write_shapefile, box_ring  # noqa: F401
@@ -287,13 +288,19 @@ def test_fractions_kept_by_computations(synthetic, isolated):
     data = eager(isolated, 'rain', 2019, 2020)
     alpha = data.clip(state='Alpha')
     fraction = alpha.cell_fraction.copy()
+    # Reference: the indices on the plain (unclipped) box of Alpha's cells, then region()
+    i, j = slice(40, 42), slice(10, 101)
+    box = IMD(data.data[:, i, j].copy(), 'rain', data.start_day, data.end_day, data.no_days,
+              data.lat_array[j].copy(), data.lon_array[i].copy(), data.land_mask[i, j].copy())
+    assert np.array_equal(box.lon_array, alpha.lon_array)
+    assert np.array_equal(box.lat_array, alpha.lat_array)
     for method in ('rx5d', 'rxa', 'cdd', 'pci', 'sdii'):
         out = alpha.copy().compute(method, 'A')
         assert np.array_equal(out.cell_fraction, fraction)
         same_values(out.spatial_mean().iloc[:, 0],
-                    data.copy().compute(method, 'A').region(state='Alpha').iloc[:, 0])
-    for out, ref in ((alpha.copy().climatology(), data.copy().climatology()),
-                     (alpha.copy().anomaly(), data.copy().anomaly())):
+                    box.copy().compute(method, 'A').region(state='Alpha').iloc[:, 0])
+    for out, ref in ((alpha.copy().climatology(), box.copy().climatology()),
+                     (alpha.copy().anomaly(), box.copy().anomaly())):
         assert np.array_equal(out.cell_fraction, fraction)
         same_values(out.spatial_mean().iloc[:, 0], ref.region(state='Alpha').iloc[:, 0])
     copy = alpha.copy()

@@ -185,10 +185,10 @@ class IMD(Compute):
 
     @property
     def shape(self):
+        """Size of the data: (days, longitudes, latitudes). Doesn't read the data."""
         if self._data_pending:
-            print(self._source.shape)
-        else:
-            print(self.data.shape)
+            return self._source.shape
+        return self.data.shape
 
     def to_csv(self, file_name=None, lat=None, lon=None, out_dir=None):
 

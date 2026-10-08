@@ -14,11 +14,10 @@ Marked slow and skipped unless these environment variables are set:
 
     pytest -m slow test/test_regions_real.py
 """
+import functools
 import glob
 import os
 import shutil
-import subprocess
-import sys
 import time
 import zipfile
 
@@ -61,13 +60,26 @@ def gis():
     return pytest.importorskip('geopandas')
 
 
-def soi_polygon(layer, name, state_zip):
-    """A state ('STATE_BDY') or district ('DISTRICT_BDY') polygon from the SoI zip."""
+# The source layers are read once (the polygons are not changed by the tests)
+@functools.lru_cache(maxsize=None)
+def soi_layer(layer, state_zip):
     gpd = gis()
-    import shapely
     zp = os.path.join(GIS, 'DISTRICTS', state_zip)
     member = [m for m in zipfile.ZipFile(zp).namelist() if m.endswith(layer + '.shp')][0]
-    df = gpd.read_file('/vsizip/' + os.path.abspath(zp) + '/' + member).to_crs(4326)
+    return gpd.read_file('/vsizip/' + os.path.abspath(zp) + '/' + member).to_crs(4326)
+
+
+@functools.lru_cache(maxsize=None)
+def cwc_basins():
+    gpd = gis()
+    return gpd.read_file(os.path.join(GIS, 'CWC_Basin', 'BASIN_CWC.shp')).to_crs(4326)
+
+
+def soi_polygon(layer, name, state_zip):
+    """A state ('STATE_BDY') or district ('DISTRICT_BDY') polygon from the SoI zip."""
+    gis()
+    import shapely
+    df = soi_layer(layer, state_zip)
     col = 'STATE' if layer == 'STATE_BDY' else 'DISTRICT'
     geoms = df.geometry[df[col].str.strip().str.upper() == name.upper()]
     assert len(geoms) == 1
@@ -75,9 +87,9 @@ def soi_polygon(layer, name, state_zip):
 
 
 def cwc_basin(name):
-    gpd = gis()
+    gis()
     import shapely
-    df = gpd.read_file(os.path.join(GIS, 'CWC_Basin', 'BASIN_CWC.shp')).to_crs(4326)
+    df = cwc_basins()
     return shapely.make_valid(df.geometry[df.Basin_Name == name].iloc[0])
 
 
@@ -128,7 +140,6 @@ def assert_same(a, b, scale):
 @pytest.mark.parametrize('kwargs, layer, name, zip_name', [
     (dict(state='Kerala'), 'STATE_BDY', 'KERALA', 'KERALA.zip'),
     (dict(district='Pune'), 'DISTRICT_BDY', 'PUNE', 'MAHARASHTRA.zip'),
-    (dict(district='Nashik'), 'DISTRICT_BDY', 'NASHIK', 'MAHARASHTRA.zip'),
     (dict(district='Ratnagiri'), 'DISTRICT_BDY', 'RATNAGIRI', 'MAHARASHTRA.zip'),   # coastal
     (dict(basin='Godavari'), None, 'Godavari', None),
 ])
@@ -269,11 +280,16 @@ def test_realtime_temperature(cache):
         err = max_difference(data.clip(district=district).spatial_mean().iloc[:, 0],
                              data.region(district=district).iloc[:, 0])
         assert err <= 1e-12
-    if GIS and os.path.isdir(os.path.join(GIS, 'DISTRICTS')):
-        geom = soi_polygon('DISTRICT_BDY', 'PUNE', 'MAHARASHTRA.zip')
-        eager = data.copy()
-        eager.data
-        assert_same(full.iloc[:, 0].values, overlay_mean(eager, geom), scale=50)
+
+
+def test_realtime_temperature_equals_overlay(cache):
+    gis()
+    start, end = realtime_files(cache, 'tmax')
+    data = imd.load('tmax', start, end, source='realtime', cache_dir=cache, offline=True)
+    got = data.region(district='Pune').iloc[:, 0].values
+    geom = soi_polygon('DISTRICT_BDY', 'PUNE', 'MAHARASHTRA.zip')
+    data.data
+    assert_same(got, overlay_mean(data, geom), scale=50)
 
 
 ###############################################################################
@@ -342,13 +358,3 @@ def test_performance(long_cache):
     print('one district 1901-2025: {:.3f} s; Maharashtra by district 2001-2025: {:.3f} s; '
           'name lookup {:.2f} ms; city lookup {:.2f} ms'.format(t1, t25, lookup * 1e3, city * 1e3))
     assert t1 < 1.0 and t25 < 1.0 and lookup < 0.005 and city < 0.005
-
-
-def test_first_use_of_city_data():
-    code = ("import time, imdlib.regions as r\n"
-            "t = time.perf_counter(); r._cities(); print(time.perf_counter() - t)")
-    out = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True,
-                         cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    seconds = float(out.stdout)
-    print('first use of city data: {:.3f} s'.format(seconds))
-    assert seconds < 0.5

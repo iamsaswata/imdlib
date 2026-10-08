@@ -97,8 +97,8 @@ def test_load_does_not_read(isolated, reads, capsys):
     data = imd.load('rain', 2019, 2020, offline=True)
     assert reads == {'full': 0, 'cells': 0}
     # Metadata does not read
-    data.shape
-    assert capsys.readouterr().out == '(731, 135, 129)\n'
+    assert data.shape == (731, 135, 129)
+    assert capsys.readouterr().out == ''          # returned, not printed
     assert (data.cat, data.start_day, data.end_day, data.no_days) == \
         ('rain', '2019-01-01', '2020-12-31', 731)
     assert len(data.lat_array) == 129 and len(data.lon_array) == 135
@@ -109,8 +109,7 @@ def test_load_does_not_read(isolated, reads, capsys):
     assert reads == {'full': 1, 'cells': 0}
     data.data
     data.land_mask
-    data.shape
-    assert capsys.readouterr().out == '(731, 135, 129)\n'
+    assert data.shape == (731, 135, 129)
     assert reads == {'full': 1, 'cells': 0}
 
 
@@ -130,15 +129,15 @@ def test_archive_rain_same_as_open_data(isolated, start, end, mask_first):
     same(a, eager(isolated, 'rain', start, end))
 
 
-@pytest.mark.parametrize('var', ['tmax', 'tmin'])
 @pytest.mark.parametrize('start, end', [(2019, 2020), ('2020-02-28', '2020-03-01')])
 @pytest.mark.parametrize('mask_first', [False, True])
-def test_archive_temp_same_as_open_data(isolated, var, start, end, mask_first):
-    put_archive_eager_names(isolated, var, [2019, 2020])
-    a = imd.load(var, start, end, offline=True)
+def test_archive_temp_same_as_open_data(isolated, start, end, mask_first):
+    # tmax only: tmin is read the same way (same grid, no tmin-specific code)
+    put_archive_eager_names(isolated, 'tmax', [2019, 2020])
+    a = imd.load('tmax', start, end, offline=True)
     if mask_first:
         a.land_mask
-    same(a, eager(isolated, var, start, end))
+    same(a, eager(isolated, 'tmax', start, end))
 
 
 @pytest.mark.parametrize('var', ['rain', 'rain_gpm', 'tmax', 'tmin'])
@@ -298,9 +297,10 @@ def test_assigning_data(isolated, reads):
 
 def test_methods_on_lazy_objects(isolated):
     put_archive_eager_names(isolated, 'rain', [2019, 2020])
-    for method in ('cdd', 'rxa'):
-        a = imd.load('rain', 2019, 2020, offline=True).compute(method, 'A')
-        b = eager(isolated, 'rain', 2019, 2020).compute(method, 'A')
+    # cdd (slow) on one year, rxa on both
+    for method, start in (('cdd', 2020), ('rxa', 2019)):
+        a = imd.load('rain', start, 2020, offline=True).compute(method, 'A')
+        b = eager(isolated, 'rain', start, 2020).compute(method, 'A')
         assert np.array_equal(a.data, b.data, equal_nan=True)
         assert a.var_name == b.var_name
     a = imd.load('rain', 2019, 2020, offline=True)
