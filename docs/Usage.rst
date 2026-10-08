@@ -238,17 +238,16 @@ Regions
 =======
 
 ``region()`` gives a time series of the data for a region of India: a state or union
-territory, a district, a city, a river basin or sub-basin, or the polygons of your own
+territory, a district, a river basin or sub-basin, a city, or the polygons of your own
 shapefile. The result is a ``pandas.DataFrame`` with one column per region.
 
 - For a state, district, basin, sub-basin or shapefile, the value is the **area-weighted
   average over the shape**. Each grid cell counts in proportion to its area inside the shape,
   so cells on the boundary count with the part that lies inside.
-- For a city, the value is that of the **one grid cell that contains it**. For coastal places
-  whose cell has no data, a neighbouring cell with data is used.
+- For a city, the value is that of the **one grid cell that contains it**.
 
-Masked cells and missing values are left out of each time step. ``region()`` does not change
-the data object, and with data from ``load()`` it reads only the cells of the region.
+Missing values are left out of each time step. ``region()`` does not change the data object,
+and with data from ``load()`` it reads only the cells of the region.
 
 .. code-block:: python
 
@@ -258,12 +257,32 @@ the data object, and with data from ``load()`` it reads only the cells of the re
 
     kerala = data.region(state='Kerala')
     pune = data.region(district='Pune')
+    godavari = data.region(basin='Godavari')
     delhi = data.region(city='Delhi')
+
+States and districts
+--------------------
+
+``state=`` takes a state or union territory and ``district=`` a district. Some district names
+exist in more than one state; give ``state=`` as well to choose one. ``by='district'`` gives
+all districts of a state, one column each.
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    data = imd.load('rain', 2001, 2020)
+
+    rajasthan = data.region(state='Rajasthan')
+    bilaspur = data.region(district='Bilaspur', state='Chhattisgarh')
+    maharashtra = data.region(state='Maharashtra', by='district')   # one column per district
 
 Basins and sub-basins
 ---------------------
 
-Basins and sub-basins are those of the Central Water Commission (CWC).
+Basins and sub-basins are those of the Central Water Commission (CWC). ``by='subbasin'`` gives
+all sub-basins of a basin, one column each. Names follow CWC's spelling; common spellings
+work too.
 
 .. code-block:: python
 
@@ -275,50 +294,38 @@ Basins and sub-basins are those of the Central Water Commission (CWC).
     parts = data.region(basin='Godavari', by='subbasin')   # one column per sub-basin
     wainganga = data.region(subbasin='Wainganga')          # column 'Weinganga' (CWC spelling)
 
-Several regions
----------------
+Cities
+------
 
-Give a list of names, or ``by=`` for all districts of a state or all sub-basins of a basin.
-``state=`` together with ``district=`` only narrows the match, e.g. for district names that
-exist in more than one state.
+``city=`` takes a city, town or village. The value is that of the grid cell that contains the
+place. For a place on the coast whose cell has no data, a neighbouring cell with data is used.
 
-.. code-block:: python
+Many places share a name. When several places fit, the first in this order is used:
 
-    import imdlib as imd
+1. a district headquarters or state capital of that name;
+2. a town of that name (15,000 people or more, or an administrative centre);
+3. a district headquarters or state capital with it as an old or other name (``'Bombay'`` gives
+   Mumbai);
+4. a town with it as an old or other name (``'Rajahmundry'`` gives Rajamahendravaram);
+5. any other place, such as a village.
 
-    data = imd.load('rain', 2001, 2020)
-
-    districts = data.region(district=['Pune', 'Nashik', 'Satara'])
-    cities = data.region(city=['Delhi', 'Mumbai', 'Chennai', 'Kolkata'])
-    maharashtra = data.region(state='Maharashtra', by='district')
-    bilaspur = data.region(district='Bilaspur', state='Chhattisgarh')
-
-Temperature, indices and real-time data
----------------------------------------
-
-``region()`` works the same way for temperature, for computed data such as indices,
-climatology or anomalies, and for real-time data. To get an index for a region, compute the
-index on the grid first, then take the region.
+If two places fit equally, add ``state=`` and/or ``district=``.
 
 .. code-block:: python
 
     import imdlib as imd
 
-    tmax = imd.load('tmax', 2001, 2020)
-    rajasthan = tmax.region(state='Rajasthan')
+    data = imd.load('tmax', 2001, 2020)
 
-    rain = imd.load('rain', 2001, 2020)
-    rx5d = rain.compute('rx5d', 'A').region(state='Kerala', by='district')
-
-    recent = imd.load('rain', '2026-10-01', '2026-10-05', source='realtime')
-    pune = recent.region(city='Pune')
+    bombay = data.region(city='Bombay')                       # column 'Mumbai (Maharashtra)'
+    rampur = data.region(city='Rampur', district='Bareilly')
 
 Your own shapefile
 ------------------
 
 The shapefile must contain polygons in longitude/latitude (EPSG:4326). All polygons form one
 region named after the file; with ``by=``, polygons with the same value of an attribute field
-form one region each. This needs the ``pyshp`` and ``shapely`` packages and works on any grid.
+form one region each. This needs the ``pyshp`` and ``shapely`` packages.
 
 .. code-block:: python
 
@@ -329,20 +336,51 @@ form one region each. This needs the ``pyshp`` and ``shapely`` packages and work
     catchment = data.region(shapefile='my_catchment.shp')        # column 'my_catchment'
     villages = data.region(shapefile='villages.shp', by='NAME')  # one column per NAME
 
-Names
------
+Several regions at once
+-----------------------
 
-- Case, accents and punctuation are ignored. Official names, other spellings and old names
-  work, e.g. ``'Gurgaon'`` for Gurugram or ``'Cuttack'`` for Kataka. An official name is used
-  before an old name or another spelling of a different region. The columns show the official
-  names; district and city columns read ``'Name (State)'``.
+A list of names gives one column per region, for any type:
 
-- A name that is not found raises ``imd.RegionNotFoundError``, which suggests close names. A
-  name that fits more than one region raises ``imd.AmbiguousRegionError``; add ``state=`` to
-  choose one. Both are subclasses of ``imd.RegionError``, itself a ``ValueError``.
+.. code-block:: python
 
-- ``imd.regions.search()`` finds names, ``imd.regions.list()`` lists the regions of a type and
-  ``imd.regions.info()`` shows the sources and their dates.
+    import imdlib as imd
+
+    data = imd.load('rain', 2001, 2020)
+
+    districts = data.region(district=['Pune', 'Nashik', 'Satara'])
+    cities = data.region(city=['Delhi', 'Mumbai', 'Chennai', 'Kolkata'])
+
+``by=`` splits one region into its parts, one column each. It works in three cases:
+
+=======================  ========================  ====================================
+Region                   ``by=``                   Columns
+=======================  ========================  ====================================
+``state='Maharashtra'``  ``'district'``            each district of the state
+``basin='Godavari'``     ``'subbasin'``            each sub-basin of the basin
+``shapefile='x.shp'``    a field, e.g. ``'NAME'``  each value of that field in the file
+=======================  ========================  ====================================
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    data = imd.load('rain', 2001, 2020)
+
+    maharashtra = data.region(state='Maharashtra', by='district')
+    godavari = data.region(basin='Godavari', by='subbasin')
+    villages = data.region(shapefile='villages.shp', by='NAME')
+
+Districts, sub-basins, cities and lists have no parts; ``by=`` with them raises an error.
+
+Finding names
+-------------
+
+Case, accents and punctuation are ignored. Official names, other spellings and old names all
+work, e.g. ``'Gurgaon'`` for Gurugram or ``'Cuttack'`` for Kataka. The columns show the
+official names; district and city columns read ``'Name (State)'``.
+
+``imd.regions.search()`` finds names, ``imd.regions.list()`` lists the regions of a type and
+``imd.regions.info()`` shows the sources and their dates.
 
 .. code-block:: python
 
@@ -356,8 +394,9 @@ Names
 city) and ``matched_alias``, which shows the old name or other spelling that matched when the
 name itself did not.
 
-An old name gives the place under its current name, and a name that fits several regions
-gives an error that lists them:
+A name that is not found raises ``imd.RegionNotFoundError``, which suggests close names. A
+name that fits more than one region raises ``imd.AmbiguousRegionError``, which lists them.
+Both are subclasses of ``imd.RegionError``, itself a ``ValueError``.
 
 .. code-block:: python
 
@@ -377,39 +416,19 @@ gives an error that lists them:
     imdlib.regions.AmbiguousRegionError: 'Bengaluru' matches several districts: Bengaluru Urban,
     Bengaluru Rural, Bengaluru South (Karnataka). Use one of these names.
 
-Cities
-------
-
-If several places have the name given with ``city=``, the first in this order is used:
-
-1. a district headquarters or state capital of that name;
-2. a town of that name (15,000 people or more, or an administrative centre);
-3. a district headquarters or state capital with it as an old or other name (``'Bombay'`` gives
-   Mumbai);
-4. a town with it as an old or other name (``'Rajahmundry'`` gives Rajamahendravaram);
-5. any other place, such as a village.
-
-If two places fit equally, add ``state=`` and/or ``district=``.
-Cities and villages are found with ``imd.regions.search(..., type='city')``.
-
-.. code-block:: python
-
-    import imdlib as imd
-
-    data = imd.load('tmax', 2001, 2020)
-
-    bombay = data.region(city='Bombay')                       # column 'Mumbai (Maharashtra)'
-    rampur = data.region(city='Rampur', district='Bareilly')
-
 Notes
 -----
 
-- ``region()`` works with archive and real-time data (including ``rain_gpm``), with data that
-  was clipped, and with computed data such as ``compute()``, ``climatology()`` or
-  ``anomaly()``. The time index is the same as that of ``spatial_mean()``.
+- ``region()`` works with any IMD data: rainfall and temperature, archive and real-time data
+  (including ``rain_gpm``), clipped data, and computed data such as indices, climatology or
+  anomalies. For an index of a region, compute the index first, then take the region:
 
-- ``region()`` works on any IMD grid, also with data remapped onto one. Other grids need
-  ``shapefile=``.
+  .. code-block:: python
+
+      import imdlib as imd
+
+      rain = imd.load('rain', 2001, 2020)
+      rx5d = rain.compute('rx5d', 'A').region(state='Kerala', by='district')
 
 - ``clip()`` gives the data of one region as a grid (see `Clipping to a region`_). Its
   ``spatial_mean()`` equals ``region()`` for the same region.
@@ -463,8 +482,7 @@ The clipped object's ``spatial_mean()`` equals ``region()`` for the same region:
   climatology given to ``anomaly()``. SPEI needs unclipped ``tmax`` and ``tmin``; rainfall
   may be clipped, or compute SPEI on the full data and clip the result.
 - A shapefile must contain polygons in longitude/latitude (EPSG:4326), and all its polygons
-  form one area. This needs the ``pyshp`` and ``shapely`` packages and works on any grid.
-  Region names work on IMD grids.
+  form one area. This needs the ``pyshp`` and ``shapely`` packages.
 
 
 Climatology & Anomaly
