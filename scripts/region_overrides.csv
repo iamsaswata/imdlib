@@ -1,0 +1,107 @@
+# Hand fixes for scripts/build_regions.py.
+# kind=match:  SoI district (state, SoI name) -> LGD district code (value),
+#              for pairs below the name-similarity threshold of the join.
+# kind=hq:     LGD district without an SoI shape (state, LGD name) -> name of
+#              its HQ place (value), used to find the SoI district it lies in.
+# kind=parent: LGD district without an SoI shape -> SoI district (value).
+# kind=drop_alias: alias (value) that is wrong in a source, of a district
+#              (state given) or of a state, basin or sub-basin (state empty).
+# kind=not_district: a place (name) often taken for a district that is not
+#              one in the official boundaries; value: the region it is part of.
+# SoI state capital and district HQ points (state, SoI label as written):
+# kind=city_name:    the label misspelt or in an old form -> name (value); the
+#              label is kept as another spelling.
+# kind=city_relabel: the label is wrong (e.g. the district's name) -> name
+#              of the town (value); the label is not kept.
+# kind=city_same:    the GeoNames place (value) that is the same town; the
+#              SoI name is shown.
+# kind=city_keep:    not merged with a GeoNames place of another name.
+# kind=city_skip:    point not used.
+# kind=city_hq: GeoNames place (state, name) flagged as an HQ (value empty).
+# kind=city_alias: another spelling (value) of an HQ or capital (state, name).
+kind,state,name,value,note
+match,Assam,SOUTH SALMARA,707,South Salmara Mancachar
+match,Chhattisgarh,BALRAMPUR,649,Balrampur-Ramanujganj
+match,Chhattisgarh,BALODA BAZAR,644,Balodabazar-Bhatapara
+hq,Gujarat,Vav-Tharad,Tharad,HQ of Vav-Tharad
+hq,Delhi,Old Delhi,Chandni Chowk,LGD sub-district of Old Delhi
+hq,Delhi,Central North,Model Town,LGD sub-district of Central North
+hq,Delhi,Outer North,Narela,LGD sub-district of Outer North
+drop_alias,Maharashtra,Mumbai Suburban,Mumbai City,GeoNames lists the other district's name
+not_district,Puducherry,Mahe,Puducherry,region of Puducherry district (LGD and SoI list only Puducherry and Karaikal)
+not_district,Puducherry,Yanam,Puducherry,region of Puducherry district
+city_hq,Puducherry,Mahe,,HQ of the Mahe region
+city_hq,Puducherry,Yanam,,HQ of the Yanam region
+city_name,Kerala,THIRUVANANTHPURAM,Thiruvananthapuram,typo
+city_name,Goa,PANJI,Panaji,typo
+city_name,Andhra Pradesh,VISHAKHAPATNAM,Visakhapatnam,typo
+city_name,Telangana,SURIYAPRT,Suryapet,typo
+city_name,Telangana,WABPARTI,Wanaparthy,typo
+city_name,Telangana,HANMAKONDA,Hanumakonda,spelling of the district
+city_name,Telangana,MANCHERIAL CITY,Mancherial,
+city_name,Maharashtra,BID,Beed,official spelling
+city_name,Maharashtra,OROS BUDRUK,Oros,GeoNames name
+city_name,Assam,Dhubur,Dhubri,typo
+city_name,Assam,BERPETA,Barpeta,typo
+city_name,Assam,GARMUR,Garamur,spelling
+city_name,Assam,MOCHALPUR,Mushalpur,typo
+city_name,Assam,LAKHIMPUR,North Lakhimpur,the town (Lakhimpur is the district)
+city_name,Bihar,Samastpur,Samastipur,typo
+city_name,Bihar,ARA,Arrah,GeoNames name
+city_name,Jharkhand,Chabasa,Chaibasa,typo
+city_name,Jharkhand,DEVGHAR,Deoghar,spelling
+city_name,Odisha,Nuaparha,Nuapada,spelling
+city_name,Odisha,Jajapur,Jajpur,spelling
+city_name,Odisha,Rayagarh,Rayagada,typo
+city_name,Odisha,BHUBANESHWAR,Bhubaneswar,spelling
+city_name,Odisha,ANUGUL,Angul,GeoNames name (the district is Anugola)
+city_name,Odisha,SONAPUR,Sonepur,GeoNames name (the district is Subarnapur)
+city_name,Odisha,NABARANGAPUR,Nabarangpur,spelling of the district
+city_name,Rajasthan,Raj Samand,Rajsamand,spelling
+city_name,Uttar Pradesh,Lakhmpur,Lakhimpur,typo
+city_name,Uttar Pradesh,CHITRAKOOT DHAM KARWI,Chitrakoot Dham,GeoNames name
+city_name,Madhya Pradesh,Neemach,Neemuch,spelling
+city_name,Manipur,TEGNOUPAL,Tengnoupal,typo
+city_name,Meghalaya,KHLICHRIAT,Khliehriat,typo
+city_name,Sikkim,GYLSHING,Gyalshing,typo
+city_name,Andhra Pradesh,PRAVATHIPURAM,Parvathipuram,typo
+city_name,Andhra Pradesh,AMRAVATI,Amaravati,capital of Andhra Pradesh
+city_name,Andhra Pradesh,CUDDAPAH,Kadapa,official name
+city_name,Andhra Pradesh,NARASARAOPETA,Narasaraopet,GeoNames name
+city_name,Andhra Pradesh,DHAVALESWARAM,Dowlaiswaram,GeoNames name
+city_name,Andhra Pradesh,RAMPA CHODAVARAM,Rampachodavaram,GeoNames name
+city_name,Andhra Pradesh,MARKAPURAM,Markapur,GeoNames name
+city_name,Arunachal Pradesh,SEEPA,Seppa,typo
+city_name,Arunachal Pradesh,KOLORAING,Koloriang,typo
+city_name,Arunachal Pradesh,PALIN CITY,Palin,
+city_name,West Bengal,KOCHBIHAR,Koch Bihar,GeoNames name
+city_name,Punjab,SAS NAGAR,Mohali,usual name
+city_name,Ladakh,LEH (LADAKH),Leh,
+city_name,Andaman and Nicobar Islands,CAR NICOBARS,Car Nicobar,
+city_name,Mizoram,AIZWAL,Aizawl,typo
+city_relabel,Tripura,UNAKOTI,Kailashahar,the label is the district's name
+city_relabel,Tripura,SEPAHIJALA,Bishramganj,the label is the district's name
+city_relabel,Tripura,SOUTH TRIPURA,Belonia,the label is the district's name
+city_relabel,Arunachal Pradesh,PAKKE KESSANG,Lemmi,the label is the district's name
+city_relabel,Arunachal Pradesh,AMINI,Anini,typo; Amini is an island of Lakshadweep
+city_relabel,Uttar Pradesh,SHRAWASTI,Bhinga,the label is the district's name
+city_relabel,West Bengal,PASHCHIM MEDINIPUR,Medinipur,the label is the district's name
+city_relabel,Madhya Pradesh,AGAR MALWA,Agar,the label is the district's name
+city_relabel,Rajasthan,DIDWANA- KUCHAMAN,Didwana,the label is the district's name
+city_relabel,Rajasthan,KOTPUTLI- BEHROR,Kotputli,the label is the district's name
+city_relabel,Telangana,SANGAREDDI,Medak,the point is at Medak
+city_relabel,Chhattisgarh,CHHUIKHADAN,Khairagarh,the point is at Khairagarh
+city_relabel,Karnataka,DOD BALLAPUR,Bengaluru,the point is in Bengaluru (labels swapped)
+city_relabel,Karnataka,BENGLURU,Doddaballapura,the point is at Doddaballapura (labels swapped)
+city_alias,Karnataka,Bengaluru,Bengluru,SoI spelling (on the Doddaballapura point)
+city_same,Assam,SRIBHUMI,Karimganj,district and town renamed
+city_same,Uttar Pradesh,AYODHYA,Fyzabad,the HQ is in Faizabad (Fyzabad) now named Ayodhya
+city_same,Uttarakhand,HARIDWAR,Haridwar,the HQ point is 11 km from the town
+city_same,Chhattisgarh,DANTEWADA,Dantewara,GeoNames spelling
+city_same,Telangana,THUMUKUNTA,Tumkunta,GeoNames spelling
+city_same,Nagaland,CHUMOUKEDIMA,Chumukedima,GeoNames spelling
+city_same,Nagaland,SHAMATOR,Shamtorr,GeoNames spelling
+city_same,Meghalaya,BAGHMARA,Baghamara,GeoNames spelling
+city_keep,Delhi,DARYAGANJ,,a locality of Delhi (not Delhi itself)
+city_keep,Mizoram,CHAMPHAI,,GeoNames lists Champhai as another name of Ngur (8 km)
+city_keep,Nagaland,PEREN,,GeoNames lists Peren as another name of Lakema (4 km)

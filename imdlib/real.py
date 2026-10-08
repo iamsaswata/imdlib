@@ -5,7 +5,8 @@ import requests
 from imdlib.core import IMD
 from imdlib.lazy import GrdFiles
 from imdlib.util import get_filename_realtime
-from imdlib.util import REALTIME_GRIDS, REALTIME_URLS, save_download, read_grd
+from imdlib.util import GRIDS, REALTIME_GRID, REALTIME_URLS, save_download, read_grd
+from imdlib.util import REALTIME_GRIDS  # noqa: F401 (was importable from here)
 
 def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
 
@@ -54,21 +55,6 @@ def _open_realtime(var_type, start_dy, end_dy, fname_of_day, lazy=False):
     read on first use of the data (``load``).
     """
 
-    lat_size_rain = 129
-    lon_size_rain = 135
-    lat_rain = np.linspace(6.5, 38.5, lat_size_rain)
-    lon_rain = np.linspace(66.5, 100.0, lon_size_rain)
-
-    lat_size_temp = 61
-    lon_size_temp = 61
-    lat_temp = np.linspace(7.5, 37.5, lat_size_temp)
-    lon_temp = np.linspace(67.5, 97.5, lon_size_temp)
-
-    lat_size_gpm = 281
-    lon_size_gpm = 241
-    lat_gpm = np.linspace(-30.0, 40.0, lat_size_gpm)
-    lon_gpm = np.linspace(50.0, 110.0, lon_size_gpm)
-    #######################################
     # Format Date into <yyyy-mm-dd>
 
     # Handling ending year not given case
@@ -79,29 +65,17 @@ def _open_realtime(var_type, start_dy, end_dy, fname_of_day, lazy=False):
     days = pd.date_range(start_dy, end_dy, freq='D')
 
     # Decide which variable we are looking into
-    if var_type == 'rain':
-        lat_size_class = lat_size_rain
-        lon_size_class = lon_size_rain
-    elif var_type == 'tmin' or var_type == 'tmax':
-        lat_size_class = lat_size_temp
-        lon_size_class = lon_size_temp
-    elif var_type == 'rain_gpm':
-        lat_size_class = lat_size_gpm
-        lon_size_class = lon_size_gpm
-    else:
+    # tuple(): an unhashable var_type gets the same error as before, not a TypeError
+    if var_type not in tuple(REALTIME_GRID):
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'rain_gpm'/'tmin'/'tmax'. ")
+    grid = GRIDS[REALTIME_GRID[var_type]]
+    lat_size_class, lon_size_class = grid.shape
 
     if lazy:
         source = GrdFiles(var_type, [(fname_of_day(day), 1) for day in days],
                           lat_size_class, lon_size_class, 0, len(days), land_mask=False)
-        if var_type == 'rain':
-            lat, lon = lat_rain, lon_rain
-        elif var_type == 'rain_gpm':
-            lat, lon = lat_gpm, lon_gpm
-        else:
-            lat, lon = lat_temp, lon_temp
-        data = IMD(None, var_type, start_dy, end_dy, len(days), lat, lon)
+        data = IMD(None, var_type, start_dy, end_dy, len(days), grid.lat, grid.lon)
         data._attach_source(source)
         return data
 
@@ -131,23 +105,7 @@ def _open_realtime(var_type, start_dy, end_dy, fname_of_day, lazy=False):
         #     all_data = data
 
     # Create a IMD object
-    if var_type == 'rain':
-        data = IMD(all_data, 'rain', start_dy, end_dy, len(days),
-                   lat_rain, lon_rain)
-    elif var_type == 'rain_gpm':
-        data = IMD(all_data, 'rain_gpm', start_dy, end_dy, len(days),
-                   lat_gpm, lon_gpm)
-    elif var_type == 'tmin':
-        data = IMD(all_data, 'tmin', start_dy, end_dy, len(days),
-                   lat_temp, lon_temp)
-    elif var_type == 'tmax':
-        data = IMD(all_data, 'tmax', start_dy, end_dy, len(days),
-                   lat_temp, lon_temp)
-    else:
-        raise Exception("Error in variable type declaration.\n"
-                        "It must be 'rain'/'rain_gpm'/'tmin'/'tmax'. ")
-
-    return data
+    return IMD(all_data, var_type, start_dy, end_dy, len(days), grid.lat, grid.lon)
 
 
 def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
@@ -248,8 +206,7 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
             response.raise_for_status()
 
             # Saving file (only if it has exactly the expected size)
-            nlat, nlon = REALTIME_GRIDS[var_type]
-            save_download(response.content, fname, nlat * nlon * 4,
+            save_download(response.content, fname, GRIDS[REALTIME_GRID[var_type]].file_size(),
                           "{} for date {}".format(var_type, str(day.date())),
                           empty_msg="Error in file download. Real-time {} for date {} is "
                                     "not available (IMD returned an empty file; recent days "

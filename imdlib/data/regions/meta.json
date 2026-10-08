@@ -1,0 +1,316 @@
+{
+ "script_version": 4,
+ "sources": {
+  "boundaries": {
+   "description": "Survey of India state and district boundaries",
+   "date": "2026-09-12"
+  },
+  "names": {
+   "description": "Local Government Directory (lgdirectory.gov.in), state and district lists",
+   "date": "2026-10-07"
+  },
+  "basins": {
+   "description": "Central Water Commission (CWC) basins and sub-basins",
+   "date": "2026-10-07"
+  },
+  "places": {
+   "description": "GeoNames (geonames.org, CC BY 4.0), populated places and alternate names",
+   "date": "2026-10-06"
+  }
+ },
+ "counts": {
+  "states": 36,
+  "districts": 782,
+  "basins": 25,
+  "subbasins": 99,
+  "districts_without_shape": 6,
+  "cities": 548234,
+  "aliases": 2261,
+  "city_aliases": 21449
+ },
+ "grids": {
+  "r025": {
+   "lon0": 66.5,
+   "lat0": 6.5,
+   "step": 0.25,
+   "nlon": 135,
+   "nlat": 129
+  },
+  "t100": {
+   "lon0": 67.5,
+   "lat0": 7.5,
+   "step": 1.0,
+   "nlon": 31,
+   "nlat": 31
+  },
+  "t050": {
+   "lon0": 67.5,
+   "lat0": 7.5,
+   "step": 0.5,
+   "nlon": 61,
+   "nlat": 61
+  }
+ },
+ "gpm_offset": [
+  66,
+  146
+ ],
+ "inputs": [
+  {
+   "path": "DISTRICTS/ANDAMAN and NICOBAR.zip",
+   "bytes": 3428404,
+   "sha256": "be31b96e09849baefb71feab42c957723fbc8b7fd905ae64f7202d79d70b0824"
+  },
+  {
+   "path": "DISTRICTS/ANDHRA PRADESH.zip",
+   "bytes": 3120994,
+   "sha256": "274d51b87bd07b8c3fcd8af725e432564e06d0513985fcb5b79e01aaaa8e01ab"
+  },
+  {
+   "path": "DISTRICTS/ARUNACHAL PRADESH.zip",
+   "bytes": 966269,
+   "sha256": "7500df20a53829dbecbf22173615e236e9238f31c354a7d4434ab4561371bed5"
+  },
+  {
+   "path": "DISTRICTS/ASSAM.zip",
+   "bytes": 2542359,
+   "sha256": "9d9e59627ac789daee2c383abc77439228a6ed31aaf4c1baefb19583c71cb74f"
+  },
+  {
+   "path": "DISTRICTS/BIHAR.zip",
+   "bytes": 2339448,
+   "sha256": "99503bdcc394bf19a123ab5d6d423a1d6411c8a7b6fc47496aa954eb4703c5d9"
+  },
+  {
+   "path": "DISTRICTS/CHANDIGARH.zip",
+   "bytes": 84463,
+   "sha256": "72412c41b6fe3b10c1ba5265de046a9d754349f69d230c2eb36137d67e6c2aaf"
+  },
+  {
+   "path": "DISTRICTS/CHHATTISGARH.zip",
+   "bytes": 2476062,
+   "sha256": "503b02a3e5dd40596290ff8f9257dd5d9fec94fe0d73100f1bd86cfbff1526fb"
+  },
+  {
+   "path": "DISTRICTS/DELHI.zip",
+   "bytes": 361390,
+   "sha256": "f906d37a555db5b232e2d520e77be3dec8620b1870a5da2a3da4f4d3056fa61b"
+  },
+  {
+   "path": "DISTRICTS/GOA.zip",
+   "bytes": 297410,
+   "sha256": "4f89af309596276c9c74b1a4fc2b94043a1c3d2e41a9bb7976595e6fb21e874d"
+  },
+  {
+   "path": "DISTRICTS/GUJARAT.zip",
+   "bytes": 3641850,
+   "sha256": "0d3a70af62db979051ac4278a0bd3b4c08c182e03111c1ea104f595d30155e4c"
+  },
+  {
+   "path": "DISTRICTS/HARYANA.zip",
+   "bytes": 1332311,
+   "sha256": "adaa9cb8784298c2d956281b80db5f1df88582d23713827a35d6c789fd8264b7"
+  },
+  {
+   "path": "DISTRICTS/HIMACHAL PRADESH.zip",
+   "bytes": 987593,
+   "sha256": "ae6bdc5e0efe761b8842fa8755fe27e65e332132bf27f911956932ad287fc472"
+  },
+  {
+   "path": "DISTRICTS/JAMMU AND KASMIR.zip",
+   "bytes": 436025,
+   "sha256": "34d596de280cdc75f77cf758bbc9a403f52be0931a10092572ea46158c3a2104"
+  },
+  {
+   "path": "DISTRICTS/JHARKHAND.zip",
+   "bytes": 1826000,
+   "sha256": "28d5a4e4491e84646491d5e31b8c0a5530a9838fc7cc978c2caf6b431995c208"
+  },
+  {
+   "path": "DISTRICTS/KARNATAKA.zip",
+   "bytes": 5014895,
+   "sha256": "f3e63cdcc557dc7e1087d32d99c115d8722146b73a997a214f096d1479f3b871"
+  },
+  {
+   "path": "DISTRICTS/KERALA.zip",
+   "bytes": 1125644,
+   "sha256": "8530c8519974716f0b7dc496ae23cd42c7170e5187586a347091b31248eb96d4"
+  },
+  {
+   "path": "DISTRICTS/LADAKH.zip",
+   "bytes": 346624,
+   "sha256": "63e2b50940d7850f1daea5979bdb526b275b31b9a8c0552d24cdf36aff4c92bc"
+  },
+  {
+   "path": "DISTRICTS/LAKSHADWEEP.zip",
+   "bytes": 71330,
+   "sha256": "6105d138d01cca4141b075aaea133a7dba10ce020fadd3a175e7101e12daf718"
+  },
+  {
+   "path": "DISTRICTS/MADHYA PRADESH.zip",
+   "bytes": 12525802,
+   "sha256": "ca27dbb24655afcbb0083698f859accabea525b88af4065b3e5990329af373f7"
+  },
+  {
+   "path": "DISTRICTS/MAHARASHTRA.zip",
+   "bytes": 5223894,
+   "sha256": "755d4e1dbfcc065fa5482c6f558535bf7baef21ee5b85a17523774f8229f4493"
+  },
+  {
+   "path": "DISTRICTS/MANIPUR.zip",
+   "bytes": 1216740,
+   "sha256": "4223af1ed328a710983a342b74e5d82dd4141e37040578ebe979986b742b9237"
+  },
+  {
+   "path": "DISTRICTS/MEGHALAYA.zip",
+   "bytes": 1055938,
+   "sha256": "b8341a32672c2be3b0410ab5d5b83b323e5206b0d201d67098f5f45ce93b6bd8"
+  },
+  {
+   "path": "DISTRICTS/MIZORAM.zip",
+   "bytes": 1308267,
+   "sha256": "03ead320ee75a1b3b169da4c3111ce22e168182fdffd0bcd13a24ad8a9be480c"
+  },
+  {
+   "path": "DISTRICTS/NAGALAND.zip",
+   "bytes": 900924,
+   "sha256": "18e1714589bd4c21a37edcc32c628da8556978384b128ab0d4b750797fa63f4d"
+  },
+  {
+   "path": "DISTRICTS/ODISHA.zip",
+   "bytes": 2770088,
+   "sha256": "4d2ece567b714899e8d72207fc985ef3cefd020213bde2942143d71fcddb281a"
+  },
+  {
+   "path": "DISTRICTS/PUDUCHERRY.zip",
+   "bytes": 452197,
+   "sha256": "5d578b3e9d87f7bce37c995713972f4d1bb131c3cffe726ca10f3b783ad4003d"
+  },
+  {
+   "path": "DISTRICTS/PUNJAB.zip",
+   "bytes": 1513883,
+   "sha256": "4fe012622040d922455c6aed97d207ef5979d583e1d30e841260a34a0088282c"
+  },
+  {
+   "path": "DISTRICTS/RAJASTHAN.zip",
+   "bytes": 4585145,
+   "sha256": "dc81183f32388e11673e1762572450b2055fcbd5378da72fea1c6aaa78a7bb43"
+  },
+  {
+   "path": "DISTRICTS/SIKKIM.zip",
+   "bytes": 446282,
+   "sha256": "9e6f33a58563735788c8f20b74c8d43302cdd119d82d4190ebb38d4bacdb2c42"
+  },
+  {
+   "path": "DISTRICTS/TAMIL_NADU.zip",
+   "bytes": 3403365,
+   "sha256": "3d8f8f2f502cbc3c86f12fdd43250950fce02f49a194e1109e58f9580c2b0c7e"
+  },
+  {
+   "path": "DISTRICTS/TELANGANA.zip",
+   "bytes": 1711779,
+   "sha256": "81a930032d3b918bb1636a3904ceef5cb2f5ebd130e04d19accf4b351be7fe92"
+  },
+  {
+   "path": "DISTRICTS/THE_DADRA_AND_NAGAR_HAVELI_AND_DAMAN_AND_DIU.zip",
+   "bytes": 121834,
+   "sha256": "087008b0d501f938388b459efd2b76e3bde987af50f0c6a4f50b679f3fd34976"
+  },
+  {
+   "path": "DISTRICTS/TRIPURA.zip",
+   "bytes": 2064554,
+   "sha256": "6547dd655cdb974035e5a7fdd43b244d4cc2de34c04dc4c2df6ab93df55058a5"
+  },
+  {
+   "path": "DISTRICTS/UTTARAKHAND.zip",
+   "bytes": 978434,
+   "sha256": "367de3bd91e2c8f7d07d7f69e71120a9cdd0b47dcfd2ab85023caaaf85725426"
+  },
+  {
+   "path": "DISTRICTS/UTTARPRADESH.zip",
+   "bytes": 6136532,
+   "sha256": "4124c6dcb3f3668c064fcf3ad03059fb7664089ecff60c198620349c852d008e"
+  },
+  {
+   "path": "DISTRICTS/WEST_BENGAL.zip",
+   "bytes": 4644522,
+   "sha256": "de6b93faf091e631ba6e9e4871b5210f6bfb1c39e02da438e45173b641fdf680"
+  },
+  {
+   "path": "lgdirectory_gov_in/All_Stateof_India_2026-10-07_11-26-37.xlsx",
+   "bytes": 5652,
+   "sha256": "7b56abfbc9ccdc42344ecfae062ba5a12e5fb9600bb2b465a489179ffc9c016e"
+  },
+  {
+   "path": "lgdirectory_gov_in/All_Districtof_India_2026-10-07_11-27-49.xlsx",
+   "bytes": 34835,
+   "sha256": "97ba062fce591d03aa921cfc11dc614607b05ba0a6a1465211059fae51bda39d"
+  },
+  {
+   "path": "CWC_Basin/BASIN_CWC.shp",
+   "bytes": 6997324,
+   "sha256": "74a63802d759b8fe210268837de7737a4f3f23a99ecbb1543a5df366f53d3302"
+  },
+  {
+   "path": "CWC_Basin/BASIN_CWC.dbf",
+   "bytes": 14532,
+   "sha256": "95284576d1645afcb815dd3e1d5ca7e26eb5005f505e5b12293ce68df46b5080"
+  },
+  {
+   "path": "CWC_Basin/BASIN_CWC.shx",
+   "bytes": 300,
+   "sha256": "458772ad953bd636d6ebb522c6b3b53db15ee6c8474d5aff1786ea83b3f944ac"
+  },
+  {
+   "path": "CWC_Basin/BASIN_CWC.prj",
+   "bytes": 480,
+   "sha256": "b957d3ec37ddd3604bc55181bb616bfdf3c68391ba778df0c872e00ab107b99d"
+  },
+  {
+   "path": "CWC_Sub_Basin/CWCSUBBASIN.shp",
+   "bytes": 32320100,
+   "sha256": "d136531d1945b5c2b37e07ae7571c6fcfb50a151634b844df9c3455457827a76"
+  },
+  {
+   "path": "CWC_Sub_Basin/CWCSUBBASIN.dbf",
+   "bytes": 29003,
+   "sha256": "8674d29f6520cd5e1ead966523a800b7917326d74b12045e8a8a1324cbc2e18c"
+  },
+  {
+   "path": "CWC_Sub_Basin/CWCSUBBASIN.shx",
+   "bytes": 892,
+   "sha256": "dbd60bf09d81f1ba226ecf7e425783d02ea1e5f1de49b4fa8308fa1446b6d8c6"
+  },
+  {
+   "path": "CWC_Sub_Basin/CWCSUBBASIN.prj",
+   "bytes": 480,
+   "sha256": "b957d3ec37ddd3604bc55181bb616bfdf3c68391ba778df0c872e00ab107b99d"
+  },
+  {
+   "path": "GeoNames/IN.zip",
+   "bytes": 15752346,
+   "sha256": "4fc73687cce200f463d340bfbfcc9765b7f59454977736e935c0e65dffae0410"
+  },
+  {
+   "path": "scripts/region_aliases.csv",
+   "bytes": 1630,
+   "sha256": "f6897c1c5c1533dee3b89a26f94a95f0bdbe4889a1da7553bce3564eda6122f8"
+  },
+  {
+   "path": "scripts/region_overrides.csv",
+   "bytes": 6632,
+   "sha256": "f463cb6d599460bf26853769896149d02bbb10454ab3e2f7c6cd16f7f08f05e0"
+  }
+ ],
+ "data_masks": {
+  "r025": {
+   "sha256": "b4fa5ffb389496c0fa7d5a468d1cb47e4db0bcabcd11be4f273c0e6cfa7d611d"
+  },
+  "t100": {
+   "sha256": "673775eafe685d180c5d7a19018287599697a3f6800332470ab27ca512bd4b88"
+  },
+  "t050": {
+   "sha256": "73339e0fbf7ece333ca59f59042c95aa4b083832cf40f839d7e506ddfe2f7fb0"
+  }
+ }
+}

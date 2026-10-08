@@ -2,6 +2,7 @@
 #
 # RAW_METADATA: attributes for raw input variables (rain, tmin, tmax, rain_gpm).
 # VAR_METADATA: attributes for computed indices, keyed by method string.
+# COORD_METADATA: attributes for extra coordinates written by get_xarray().
 
 RAW_METADATA = {
     'rain':     {'var_name': 'rain',     'units': 'mm/day', 'long_name': 'Rainfall'},
@@ -31,4 +32,12 @@ VAR_METADATA = {
     # Drought indices (scale='M')
     'spi':    {'var_name': 'spi',    'units': '',         'long_name': 'Standardized Precipitation Index'},
     'spei':   {'var_name': 'spei',   'units': '',         'long_name': 'Standardized Precipitation Evapotranspiration Index'},
+}
+
+# Name of the coordinate written after clip()
+CELL_FRACTION = 'cell_fraction'
+
+COORD_METADATA = {
+    # Written after clip(): fraction of each grid cell inside the region
+    CELL_FRACTION: {'units': '1', 'long_name': 'fraction of grid cell inside the region'},
 }

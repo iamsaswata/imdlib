@@ -1,0 +1,28 @@
+# Hand-kept aliases for scripts/build_regions.py (gaps in the other sources).
+# Each row adds one more name (alias) for an existing region or city; rerun the build after a change.
+# type: state, district, basin, subbasin or city. name: official name as shipped.
+# state: the official state name, for districts and cities.
+# district: for cities only, the official district name, when the state is not enough to
+#   find the place (the build stops if a row fits no place or several).
+# A city alias ranks as an old or other name of the place, e.g.
+#   city,Prayagraj,Uttar Pradesh,,<other name>,<where the name comes from>
+type,name,state,district,alias,note
+state,Odisha,,,Orissa,former name
+state,Puducherry,,,Pondicherry,former name
+state,Uttarakhand,,,Uttaranchal,former name
+state,The Dadra and Nagar Haveli and Daman and Diu,,,Dadra and Nagar Haveli and Daman and Diu,without "The"
+state,Delhi,,,NCT of Delhi,
+state,Andaman and Nicobar Islands,,,Andaman and Nicobar,
+basin,Brahamaputra,,,Brahmaputra,usual spelling
+subbasin,Weinganga,,,Wainganga,usual spelling
+district,Mumbai,Maharashtra,,Bombay,former name
+district,Mumbai,Maharashtra,,Mumbai City,
+district,Mumbai,Maharashtra,,Bombay City,
+district,Mumbai Suburban,Maharashtra,,Bombay Suburban,former name
+district,Kolkata,West Bengal,,Calcutta,former name
+district,Chennai,Tamil Nadu,,Madras,former name
+district,Vadodara,Gujarat,,Baroda,former name
+district,Nashik,Maharashtra,,Nasik,spelling
+district,Pune,Maharashtra,,Poona,former name
+district,Ananthapuramu,Andhra Pradesh,,Anantapur,former name
+district,Chhatrapati Sambhajinagar,Maharashtra,,Aurangabad,former name

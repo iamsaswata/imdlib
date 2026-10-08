@@ -52,6 +52,20 @@ Convert and export
    imdlib.IMD.to_netcdf
    imdlib.IMD.to_geotiff
 
+Regions
+-------
+
+.. autosummary::
+   :toctree: reference
+
+   imdlib.IMD.region
+   imdlib.regions.search
+   imdlib.regions.list
+   imdlib.regions.info
+   imdlib.RegionError
+   imdlib.RegionNotFoundError
+   imdlib.AmbiguousRegionError
+
 Process gridded data
 --------------------
 

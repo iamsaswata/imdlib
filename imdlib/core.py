@@ -1,36 +1,28 @@
 """
 Developed by Saswata Nandi, Pratiman Patel and Sabyasachi Swain 
 """
-
 import numpy as np
 import pandas as pd
 import os
 import requests
 import xarray as xr
 from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename, parse_date_input
-from imdlib.util import ARCHIVE_GRIDS, ARCHIVE_URLS, save_download, read_grd
+from imdlib.util import GRIDS, ARCHIVE_GRID, ARCHIVE_URLS, save_download, read_grd
+from imdlib.util import ARCHIVE_GRIDS  # noqa: F401 (was importable from here)
+from imdlib.util import _missing, _check_same_cells, land_mask_of, mask_needs_all_days
+from imdlib.util import COORD_TOL, identify_grid
 from datetime import datetime
 # Added 14-05-2023 #
 from scipy.interpolate import griddata 
 from imdlib.compute import Compute, bk_point_month
-from imdlib.naming import RAW_METADATA, VAR_METADATA
-from imdlib.lazy import GrdFiles, warn_memory
+from imdlib.naming import RAW_METADATA, VAR_METADATA, COORD_METADATA, CELL_FRACTION
+from imdlib.lazy import GrdFiles, _Window, warn_memory
+from imdlib import regions
 try:
     import rioxarray as rio
     has_rioxarray = True
 except ImportError:
     has_rioxarray = False
-try:
-    from shapefile import Reader
-    has_shapefile = True
-except ImportError:
-    has_shapefile = False
-try:
-    from shapely.geometry import shape, Point
-    from shapely.ops import unary_union
-    has_shapely = True
-except ImportError:
-    has_shapely = False
 
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -60,6 +52,10 @@ class IMD(Compute):
     end_day : str
         ending date in format of <year(4 digit)-month(2 digit)-day(2 digit)>
         e.g. ('2018-12-31')
+
+    cell_fraction : numpy 2D array or None
+        After :meth:`clip`: the fraction of each grid cell inside the
+        region, shape (lon_size, lat_size); 0 outside. None otherwise.
 
     Methods
     ----------
@@ -92,6 +88,10 @@ class IMD(Compute):
         self.no_days = no_days
         self.computed = False
         self.land_mask = land_mask
+        # Fraction of each cell inside the region of clip(), shape (lon, lat)
+        self.cell_fraction = None
+        # IMD grid (a key of util.GRIDS) that clip() cut the data from
+        self._grid = None
         # Variable metadata — defaults from raw data type,
         # overridden by compute/heatwave/climatology/etc.
         meta = RAW_METADATA[cat]
@@ -135,13 +135,13 @@ class IMD(Compute):
     def _read_data(self):
         """Read all data of a lazy object, with the land mask if not known yet."""
         src = self._source
-        need_mask = self._mask_pending and src.var == 'rain' and src.no_days >= 365
+        need_mask = self._mask_pending and mask_needs_all_days(src.var, src.no_days)
         warn_memory(src.var, src.no_days, src.no_days if need_mask else 0,
                     src.nlat * src.nlon, stacklevel=3)
         data = src.read()
         if self._mask_pending:
             # Built from the data just read, as open_data() does
-            self.land_mask = _build_land_mask(src.var, data, src.no_days)
+            self.land_mask = src.mask_from_values(data, slice(None), slice(None))
         self.data = data
 
     def _read_cells(self, lon_idx, lat_idx):
@@ -176,8 +176,8 @@ class IMD(Compute):
         mask of rain data is then built from them instead of read again.
         """
         if self._mask_pending:
-            if values is not None and self._data_pending and self._source.var == 'rain':
-                return np.asarray(_build_land_mask('rain', values, len(values)))
+            if values is not None and self._data_pending:
+                return self._source.mask_from_values(values, lon_idx, lat_idx)
             return self._source.land_mask(lon_idx, lat_idx)
         if self.land_mask is None:
             return None
@@ -185,10 +185,10 @@ class IMD(Compute):
 
     @property
     def shape(self):
+        """Size of the data: (days, longitudes, latitudes). Doesn't read the data."""
         if self._data_pending:
-            print(self._source.shape)
-        else:
-            print(self.data.shape)
+            return self._source.shape
+        return self.data.shape
 
     def to_csv(self, file_name=None, lat=None, lon=None, out_dir=None):
 
@@ -213,7 +213,8 @@ class IMD(Compute):
             print("Converting 3D data to 2D data!!")
             print("You should reconsider this operation!!")
             outname = root + ext
-            self.get_xarray().to_dataframe().to_csv(outname)
+            self.get_xarray().drop_vars(list(COORD_METADATA), errors='ignore') \
+                .to_dataframe().to_csv(outname)
 
         elif sum([bool(lat), bool(lon)]) == 1:
             raise Exception("Error in lat lon setting."
@@ -255,24 +256,18 @@ class IMD(Compute):
                        float_format='%.4f')
 
     def get_xarray(self):
+        """
+        The data as an ``xarray.Dataset`` (dimensions time, lat, lon).
+
+        Missing values of the IMD files become NaN. After :meth:`clip`, the
+        dataset has the coordinate ``cell_fraction`` (lat, lon): the fraction
+        of each grid cell inside the region (0 outside).
+        """
 
         # swaping axes (time,lon,lat) > (time, lat,lon)
         # to create xarray object
         data_xr = np.swapaxes(self.data, 1, 2)
-        # To support computed data; Added on 23-07-2023
-        if self.computed:
-            if self.scale == 'A':
-                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='YE')
-            elif self.scale == 'climatology':
-                time = pd.date_range('2000-01-01', periods=12, freq='ME')
-            elif self.scale == 'anomaly':
-                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='ME')
-            elif self.scale == 'daily':
-                time = pd.date_range(self.start_day, periods=self.data.shape[0])
-            elif self.scale == 'M':
-                time = pd.date_range(self.start_day, periods=self.data.shape[0], freq='ME')
-        else:
-            time = pd.date_range(self.start_day, periods=self.no_days)
+        time = self._time_index(self.data.shape[0])
         time_units = 'days since {:%Y-%m-%d 00:00:00}'.format(time[0])
 
         xr_da = xr.Dataset(
@@ -282,12 +277,16 @@ class IMD(Compute):
             coords={'lat': self.lat_array,
                     'lon': self.lon_array, 'time': time})
 
-        # Mask sentinel values only for raw (non-computed) data
+        # Mask the missing values of the files (rain -999, temperature 99.9,
+        # GPM none) only for raw (non-computed) data
         if not self.computed:
-            if self.cat in ('rain', 'rain_gpm'):
-                xr_da = xr_da.where(xr_da[self.var_name] != -999.)
-            else:
-                xr_da = xr_da.where(xr_da[self.var_name] != data_xr[0, 0, 0])
+            values = xr_da[self.var_name]
+            xr_da = xr_da.where(values.copy(data=~_missing(values.values, self.cat)))
+
+        if self.cell_fraction is not None:
+            xr_da = xr_da.assign_coords({CELL_FRACTION: (
+                ('lat', 'lon'), np.array(self.cell_fraction, dtype=np.float64).T,
+                dict(COORD_METADATA[CELL_FRACTION]))})
 
         xr_da.time.encoding['units'] = time_units
         xr_da.time.attrs['standard_name'] = 'time'
@@ -319,7 +318,13 @@ class IMD(Compute):
 
         Reduces the spatial dimensions to a single value per timestep
         using cosine-latitude weighting.  Respects land_mask and NaN
-        values — ocean, boundary, and masked cells are excluded.
+        values — ocean, boundary, and masked cells are excluded, as are
+        the missing values of IMD files (-999 for rain, 99.9 for
+        temperature).
+
+        On data from :meth:`clip`, each cell is also weighted by the
+        fraction of the cell inside the region (``cell_fraction``), so the
+        result equals :meth:`region` for that region.
 
         Works on both raw (daily) and computed data.
 
@@ -327,7 +332,8 @@ class IMD(Compute):
         ----------
         weighted : bool, default True
             If True, weight each cell by cos(latitude) to correct for
-            meridian convergence.  If False, use arithmetic mean.
+            meridian convergence.  If False, use arithmetic mean (on
+            clipped data, still weighted by ``cell_fraction``).
 
         Returns
         -------
@@ -337,20 +343,17 @@ class IMD(Compute):
 
         Examples
         --------
-        >>> data = imd.open_data('rain', 2010, 2020, 'yearwise')
-        >>> data.clip('basin.shp')
-        >>> ts = data.spatial_mean()
+        >>> import imdlib as imd
+        >>> data = imd.load('rain', 2010, 2020)
+        >>> ts = data.clip('basin.shp').spatial_mean()
 
-        >>> data = imd.open_data('rain', 1991, 2020, 'yearwise')
+        >>> data = imd.load('rain', 1991, 2020)
         >>> ts = data.compute('spi', 'M', timescale=3).spatial_mean()
         """
-        # --- Prepare data: replace sentinels with NaN ---
+        # --- Prepare data: replace missing values with NaN ---
         work_data = self.data.copy()
         if not self.computed:
-            if self.cat in ('rain', 'rain_gpm'):
-                work_data[work_data == -999.0] = np.nan
-            else:
-                work_data[work_data == self.data[0, 0, 0]] = np.nan
+            work_data[_missing(work_data, self.cat)] = np.nan
 
         # Apply land_mask (excludes ocean + boundary artefacts)
         if self.land_mask is not None:
@@ -363,6 +366,10 @@ class IMD(Compute):
                 cos_lat, (len(self.lon_array), len(self.lat_array))).copy()
         else:
             weights = np.ones((len(self.lon_array), len(self.lat_array)))
+        if self.cell_fraction is not None:
+            # Weight as in region(): cos(lat) x fraction of the cell inside
+            weights = weights * self.cell_fraction
+        inside = weights > 0
 
         # --- Weighted spatial mean per timestep ---
         n_time = work_data.shape[0]
@@ -370,35 +377,125 @@ class IMD(Compute):
 
         for t in range(n_time):
             slab = work_data[t, :, :]
-            valid = ~np.isnan(slab)
+            valid = ~np.isnan(slab) & inside
             if not valid.any():
                 result[t] = np.nan
             else:
                 w = weights[valid]
                 result[t] = np.sum(slab[valid] * w) / np.sum(w)
 
-        # --- Build DatetimeIndex (same logic as get_xarray) ---
+        return pd.DataFrame(result, index=self._time_index(n_time),
+                            columns=[self.var_name])
+
+    def _time_index(self, n_time):
+        """DatetimeIndex of ``n_time`` time steps of the data."""
         if self.computed:
             if self.scale == 'A':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time, freq='YE')
+                return pd.date_range(self.start_day, periods=n_time, freq='YE')
             elif self.scale == 'climatology':
-                time_index = pd.date_range(
-                    '2000-01-01', periods=12, freq='ME')
+                return pd.date_range('2000-01-01', periods=12, freq='ME')
             elif self.scale == 'anomaly':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time, freq='ME')
+                return pd.date_range(self.start_day, periods=n_time, freq='ME')
             elif self.scale == 'daily':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time)
+                return pd.date_range(self.start_day, periods=n_time)
             elif self.scale == 'M':
-                time_index = pd.date_range(
-                    self.start_day, periods=n_time, freq='ME')
-        else:
-            time_index = pd.date_range(self.start_day, periods=self.no_days)
+                return pd.date_range(self.start_day, periods=n_time, freq='ME')
+            raise ValueError("Unknown time scale {!r} of computed data.".format(self.scale))
+        return pd.date_range(self.start_day, periods=self.no_days)
 
-        return pd.DataFrame(result, index=time_index,
-                            columns=[self.var_name])
+    def region(self, state=None, district=None, city=None, basin=None, subbasin=None, *,
+               shapefile=None, by=None):
+        """
+        Area-weighted mean time series of named regions of India.
+
+        Give one type of region: ``state``, ``district``, ``city``, ``basin``,
+        ``subbasin`` or ``shapefile``. Each region becomes one column of the
+        result. Names ignore case, accents and punctuation, and old names and
+        other spellings work too (for example ``'Gurgaon'`` finds Gurugram).
+        Use :func:`imdlib.regions.search` to find names.
+
+        Parameters
+        ----------
+        state : str or list of str, optional
+            State or union territory. Together with ``district`` or
+            ``city`` it only narrows the match, e.g. for district names that
+            exist in more than one state.
+        district : str or list of str, optional
+            District. Together with ``city`` it only narrows the match.
+        city : str or list of str, optional
+            City, town or village: the grid cell that contains it, or a cell
+            next to it with data if that cell has none. If several places
+            have the name, the first in this order is used: a district HQ
+            or state capital of that name; a town of that name (15,000
+            people or more, or an administrative centre); a district HQ or
+            state capital with it as an old or other name; a town with it
+            as an old or other name; any other place. If two places fit
+            equally, add ``state`` and/or ``district``.
+        basin : str or list of str, optional
+            Central Water Commission (CWC) river basin.
+        subbasin : str or list of str, optional
+            CWC sub-basin.
+        shapefile : str or path, optional
+            Polygon shapefile in longitude/latitude (EPSG:4326). Without
+            ``by``, all polygons form one region named after the file. Needs
+            the ``pyshp`` and ``shapely`` packages.
+        by : str, optional
+            One column per part: ``by='district'`` with ``state``,
+            ``by='subbasin'`` with ``basin``, or the name of an attribute
+            field with ``shapefile`` (polygons with the same value form one
+            region).
+
+        Returns
+        -------
+        pandas.DataFrame
+            One column per region, with the same time index as
+            :meth:`spatial_mean`. District and city columns are named
+            ``'Name (State)'``; states, basins and sub-basins by their name.
+            Names are the official names, also when an old name was given.
+
+        Raises
+        ------
+        imdlib.RegionNotFoundError
+            No region has this name (the message suggests close names).
+        imdlib.AmbiguousRegionError
+            The name fits more than one region; add ``state`` or ``district``.
+        ValueError
+            The data is not on an IMD grid (use ``shapefile``), or the region
+            extends beyond clipped data.
+
+        Notes
+        -----
+        A cell's weight is the fraction of the cell inside the region times
+        the cosine of its latitude, so each cell counts in proportion to its
+        area within the region. Cells that are masked or have no value at a
+        time step are left out of that step, and the weights of the other
+        cells are rescaled. If none of a region's cells has data, a cell next
+        to them with data is used. Places without data on most IMD grids,
+        such as island territories, give NaN; real-time temperature and GPM
+        data cover the islands.
+
+        The data object is not changed. For data from :func:`imdlib.load`
+        that is not read yet, only the cells of the region are read.
+
+        Region boundaries are from the Survey of India, names and codes from
+        the Local Government Directory (LGD), basins and sub-basins from the
+        Central Water Commission and places from GeoNames.
+        :func:`imdlib.regions.info` shows the sources and their dates.
+
+        Examples
+        --------
+        >>> import imdlib as imd
+        >>> data = imd.load('rain', 2001, 2020)
+        >>> kerala = data.region(state='Kerala')
+        >>> districts = data.region(district=['Pune', 'Nashik'])
+        >>> maharashtra = data.region(state='Maharashtra', by='district')
+        >>> godavari = data.region(basin='Godavari', by='subbasin')
+        >>> rampur = data.region(city='Rampur', district='Bareilly')
+        >>> catchment = data.region(shapefile='catchment.shp')
+        """
+        with regions._user_facing():
+            return regions._region(self, state=state, district=district, city=city, basin=basin,
+                                   subbasin=subbasin, shapefile=shapefile, by=by)
 
     def to_netcdf(self, file_name=None, out_dir=None):
 
@@ -424,19 +521,34 @@ class IMD(Compute):
             root, ext = os.path.splitext(file_name)
             if not ext:
                 ext = '.tif'
-            xr_da_masked = self.get_xarray()
+            xr_da_masked = self.get_xarray().drop_vars(list(COORD_METADATA), errors='ignore')
             xr_da_masked.rio.write_crs(xr_da_masked.crs, inplace=True)
             if out_dir is not None:
                 outname = "{}{}{}{}".format(out_dir, '/', root, ext)
             else:
                 outname = "{}{}".format(root, ext)
-            if self.computed:
-                nodata = np.nan
-            else:
-                nodata = xr_da_masked[self.var_name].data[0, -1, -1]
-            xr_da_masked[self.var_name].rio.write_nodata(nodata, inplace=True).rio.to_raster(outname)
-        except:
+            da = xr_da_masked[self.var_name]
+            if da.sizes['lat'] == 1 or da.sizes['lon'] == 1:
+                # A box one cell wide (e.g. a small clipped district): the
+                # cell size can't be read from the coordinates
+                da = da.rio.write_transform(self._geotransform(), inplace=True)
+            # Missing values are NaN in get_xarray(); any value (e.g. a dry
+            # day at a corner of clipped data) is data
+            da.rio.write_nodata(np.nan, inplace=True).rio.to_raster(outname)
+        except ImportError:
             raise Exception("rioxarray is not installed")
+
+    def _geotransform(self):
+        """Affine transform of the grid (cell edges), for one-cell-wide data."""
+        from affine import Affine
+        def step(values):
+            if len(values) > 1:
+                return float(values[1] - values[0])
+            key = self._grid if self._grid is not None else identify_grid(self)[0]
+            return float(GRIDS[key].step)
+        dx, dy = step(self.lon_array), step(self.lat_array)
+        return Affine(dx, 0.0, float(self.lon_array[0]) - dx / 2,
+                      0.0, dy, float(self.lat_array[0]) - dy / 2)
             
     def compute(self, method=None, scale=None, **kwargs) -> Compute:
         """
@@ -531,12 +643,6 @@ class IMD(Compute):
         bk_list = bk_point_month(self)
         n_months = bk_list.shape[0]
 
-        # Determine sentinel value
-        if self.cat in ('rain', 'rain_gpm'):
-            nan_hint = -999.0
-        else:
-            nan_hint = self.data[0, 0, 0]
-
         mon_data = np.ones((n_months, self.data.shape[1],
                             self.data.shape[2]),
                            dtype=np.float64) * np.nan
@@ -547,7 +653,8 @@ class IMD(Compute):
             else:
                 tmp_data = self.data[bk_list[i-1]:bk_list[i], :, :].copy()
 
-            tmp_data[tmp_data == nan_hint] = np.nan
+            # Missing values of the files (rain -999, temperature 99.9)
+            tmp_data[_missing(tmp_data, self.cat)] = np.nan
 
             if self.cat in ('rain', 'rain_gpm'):
                 mon_data[i, :, :] = np.nansum(tmp_data, axis=0)
@@ -654,10 +761,12 @@ class IMD(Compute):
             # Validate external climatology
             if climatology.data.shape[0] != 12:
                 raise Exception('Climatology must have shape (12, lon, lat)')
-            if climatology.data.shape[1:] != self.data.shape[1:]:
-                raise Exception('Climatology grid dimensions do not match data')
             if climatology.cat != self.cat:
                 raise Exception('Climatology variable type does not match data')
+            # Same cells (e.g. both clipped to the same region, or neither)
+            _check_same_cells({'data': self, 'climatology': climatology}, 'anomaly()')
+            if climatology.data.shape[1:] != self.data.shape[1:]:
+                raise Exception('Climatology grid dimensions do not match data')
             clim_data = climatology.data
         else:
             # Compute climatology from own data (on a copy)
@@ -931,6 +1040,11 @@ class IMD(Compute):
         IMD object
             Modified IMD object with filled missing values
 
+        Notes
+        -----
+        Temperature cells in the Andaman and Nicobar area (91-94E, 8-13N)
+        and in the row at 7.5N (7-8N) are not filled but set missing on all days.
+
         Examples
         --------
         >>> start_yr = 2015
@@ -939,11 +1053,13 @@ class IMD(Compute):
         >>> data = imd.open_data(variable, start_yr, end_yr, 'yearwise')
         >>> data.fill_na()
         """
-        nan_hint = self.data[0, 0, 0]
-        self.data[self.data == nan_hint] = np.nan
+        # Missing values of the files (rain -999, temperature 99.9) become NaN
+        if not self.computed:
+            self.data[_missing(self.data, self.cat)] = np.nan
         # Find grid index where few nan present but not all times they are nan
         id_x, id_y = np.where(np.isnan(self.data).any(axis=0)
                               * ~ np.isnan(self.data).all(axis=0))
+        no_fill = _no_fill_cells(self.cat, self.lon_array, self.lat_array)
         if len(id_x) > 0:
             print('filling missing data')
             print('No of missing grids: {}'.format(len(id_x)))
@@ -952,19 +1068,15 @@ class IMD(Compute):
                 # print('filling missing data for {} grid out of {} grids'.
                 # format(i+1, len(id_x)))
                 # print('id_x[] : {}, id_y : {}'.format(id_x[i], id_y[i]))
-                # not fill for odd lower right position in temperature data
-                if self.cat != 'rain':
-                    if (id_x[i] >= 24) and (id_x[i] <= 26) and (id_y[i] >= 1) \
-                            and (id_y[i] <= 5):
-                        self.data[:, id_x[i], id_y[i]] = np.nan
-                        continue
-                    if id_y[i] == 0:
-                        self.data[:, id_x[i], id_y[i]] = np.nan
-                        continue
+                if no_fill[id_x[i], id_y[i]]:
+                    self.data[:, id_x[i], id_y[i]] = np.nan
+                    continue
                 for j in range(self.data.shape[0]):
                     window = 0
                     while np.isnan(self.data[j, id_x[i], id_y[i]]):
                         window += 1
+                        if window > max(self.data.shape[1:]):
+                            break         # no cell has a value on this day: stays missing
                         trial_1 = np.nanmean(
                             self.data[j, id_x[i] - window:id_x[i] + window + 1,
                                       id_y[i] - window:id_y[i] + window + 1])
@@ -1007,7 +1119,8 @@ class IMD(Compute):
         Ynew, Xnew = np.meshgrid(ynew, xnew)
 
         tmp = self.data.copy()
-        tmp[tmp == tmp[0, 0, 0]] = np.nan
+        if not self.computed:
+            tmp[_missing(tmp, self.cat)] = np.nan
         self.data = np.zeros((tmp.shape[0], len(xnew), len(ynew)),
                              dtype=np.float64)
         for i in range(tmp.shape[0]):
@@ -1019,69 +1132,158 @@ class IMD(Compute):
 
         if self.land_mask is not None:
             self.land_mask = ~np.isnan(self.data[0, :, :])
+        # Fractions of the cells of clip() do not apply to the new grid
+        self.cell_fraction = None
+        self._grid = None
 
-    def clip(self, shpfile):
+    def clip(self, shapefile=None, *, state=None, district=None, basin=None, subbasin=None,
+             **unexpected):
         """
-        Function to clip a IMD object for a roi using shapefile.
+        The data of one region: a state, district, CWC basin or sub-basin,
+        or the polygons of a shapefile.
+
+        Give one area: ``state``, ``district``, ``basin``, ``subbasin`` or
+        ``shapefile`` (which can also be the first argument). Names are
+        matched as in :meth:`region`, and ``state`` together with
+        ``district`` narrows the match. Cities, lists and ``by`` are not
+        accepted; use :meth:`region` for them.
 
         Parameters
         ----------
-        shpfile : str
-            The name of shapefile with full path.
+        shapefile : str or path, optional
+            Polygon shapefile in longitude/latitude (EPSG:4326). All its
+            polygons form one area. Needs the ``pyshp`` and ``shapely``
+            packages.
+        state : str, optional
+            State or union territory.
+        district : str, optional
+            District.
+        basin : str, optional
+            Central Water Commission (CWC) river basin.
+        subbasin : str, optional
+            CWC sub-basin.
 
         Returns
         -------
-        IMD object
-            Modified IMD object clipped using the shapefile
+        IMD
+            A new object on the smallest box of grid cells that holds the
+            region. Cells outside the region are NaN and ``False`` in
+            ``land_mask``. ``cell_fraction`` (lon, lat) is the fraction of
+            each cell inside the region (0 outside). The original object is
+            not changed.
+
+        Raises
+        ------
+        imdlib.RegionNotFoundError
+            No region has this name (the message suggests close names).
+        imdlib.AmbiguousRegionError
+            The name fits more than one region; add ``state``.
+        TypeError
+            No area, more than one, a list of names or a city was given.
+        ValueError
+            The data is not on an IMD grid (use ``shapefile``), or the region
+            extends beyond the data.
+
+        Notes
+        -----
+        Every cell that overlaps the region is kept, together with the
+        fraction of the cell inside the region. These are the cells and
+        fractions that :meth:`region` uses, so :meth:`spatial_mean` of the
+        clipped data equals :meth:`region` for the same region, also after
+        :meth:`compute`. A small district keeps at least one cell. If none
+        of a region's cells has data, :meth:`region` uses a cell next to
+        them with data, and ``clip()`` keeps that cell.
+
+        For data from :func:`imdlib.load` that is not read yet, ``clip()``
+        reads nothing; the new object reads only the cells of its box when
+        first used.
+
+        Named regions need data on an IMD grid; ``shapefile`` works on any
+        regular longitude/latitude grid.
+
+        Clipped data can be clipped again. A named region must then lie
+        within the box of the clipped data (else ``ValueError``); a
+        shapefile is cut to that box. Cells outside the first region stay
+        NaN and their ``cell_fraction`` is 0.
+
+        .. versionchanged:: 0.3.0
+           ``clip()`` returns the clipped data and no longer changes the
+           object, accepts region names and keeps cells that are partly
+           inside the region.
 
         Examples
         --------
-        >>> start_yr = 2015
-        >>> end_yr = 2015
-        >>> variable = 'tmax'
-        >>> data = imd.open_data(variable, start_yr, end_yr, 'yearwise')
-        >>> data.clip('shapefile_folder_path/shapefile_name.shp')
+        >>> import imdlib as imd
+        >>> data = imd.load('rain', 2001, 2020)
+        >>> kerala = data.clip(state='Kerala')
+        >>> pune = data.clip(district='Pune')
+        >>> godavari = data.clip(basin='Godavari')
+        >>> catchment = data.clip('catchment.shp')
+        >>> ts = kerala.spatial_mean()       # equal to data.region(state='Kerala')
         """
-        if has_shapefile and has_shapely:
-            sf = Reader(shpfile)
+        unknown = sorted(unexpected)
+        if 'city' in unknown:
+            raise TypeError("clip() takes an area: state=, district=, basin=, subbasin= or a "
+                            "shapefile. For the grid cell of a city use region(city=...).")
+        if 'by' in unknown:
+            raise TypeError("clip() takes one area and has no by=. For one column per "
+                            "part use region(..., by=...).")
+        if unknown:
+            raise TypeError("clip() got an unexpected keyword argument {!r}.".format(unknown[0]))
+        with regions._user_facing():
+            cells = regions._clip_cells(self, shapefile, state=state, district=district,
+                                        basin=basin, subbasin=subbasin)
+        return self._clipped(cells)
 
-            shapes = sf.shapes()
-            polygons = [shape(shape_obj.__geo_interface__) for shape_obj in shapes]
-            combined_polygon = unary_union(polygons)
-            
-            lon_min, lat_min, lon_max, lat_max = combined_polygon.bounds
-
-            lon_min_indx = np.abs(self.lon_array - lon_min).argmin()
-            lon_max_indx = np.abs(self.lon_array - lon_max).argmin()
-            lat_min_indx = np.abs(self.lat_array - lat_min).argmin()
-            lat_max_indx = np.abs(self.lat_array - lat_max).argmin()
-
-            lon_min = self.lon_array[lon_min_indx]
-            lon_max = self.lon_array[lon_max_indx]
-            lat_min = self.lat_array[lat_min_indx]
-            lat_max = self.lat_array[lat_max_indx]
-
-            self.lon_array = self.lon_array[(self.lon_array >= lon_min) *
-                                            (self.lon_array <= lon_max)]
-            self.lat_array = self.lat_array[(self.lat_array >= lat_min) *
-                                            (self.lat_array <= lat_max)]
-
-            self.data = self.data[:, lon_min_indx:lon_max_indx + 1,
-                                  lat_min_indx:lat_max_indx + 1]
-
-            if self.land_mask is not None:
-                self.land_mask = self.land_mask[lon_min_indx:lon_max_indx + 1,
-                                                lat_min_indx:lat_max_indx + 1]
-
-            for i in range(self.data.shape[1]):      # lon loop
-                for j in range(self.data.shape[2]):  # lat loop
-                    pt = Point(self.lon_array[i], self.lat_array[j])
-                    if not pt.within(combined_polygon):
-                        self.data[:, i, j] = np.nan
-                        if self.land_mask is not None:
-                            self.land_mask[i, j] = False
+    def _clipped(self, cells):
+        """New object cut to the box of ``cells`` (regions._Cells), see clip()."""
+        i0, i1 = int(cells.lon.min()), int(cells.lon.max()) + 1
+        j0, j1 = int(cells.lat.min()), int(cells.lat.max()) + 1
+        fraction = np.zeros((i1 - i0, j1 - j0))
+        fraction[cells.lon - i0, cells.lat - j0] = cells.fraction
+        if self.cell_fraction is not None:
+            # A clip of a clip: cells outside the first region have no data
+            fraction[self.cell_fraction[i0:i1, j0:j1] == 0] = 0.0
+        keep = fraction > 0
+        box = (slice(i0, i1), slice(j0, j1))
+        if self._data_pending:
+            data = None                   # read from the files on first use
         else:
-            raise Exception("shapefile or shapely library is missing")
+            data = np.array(self.data[:, box[0], box[1]])
+            data[:, ~keep] = np.nan
+        if self._mask_pending and self._data_pending:
+            land_mask = None              # read with the data
+        elif self._mask_pending:
+            land_mask = self._land_mask_cells(*box) & keep
+        elif self.land_mask is None:
+            land_mask = None
+        else:
+            land_mask = np.array(self.land_mask[box]) & keep
+        try:
+            grid = identify_grid(self)[0]
+        except ValueError:
+            grid = None               # shapefile on another grid
+        new = self._new(data, self.lat_array[j0:j1].copy(), self.lon_array[i0:i1].copy(),
+                        land_mask)
+        new._grid = grid
+        if self._data_pending:
+            new._attach_source(_Window(self._source, i0, j0, keep), True, self._mask_pending)
+        new.cell_fraction = fraction
+        return new
+
+    def _new(self, data, lat, lon, land_mask):
+        """New object with this object's variable, period, state and metadata."""
+        new = IMD(data, self.cat, self.start_day, self.end_day,
+                  self.no_days, lat, lon, land_mask)
+        # Preserve computed state and variable metadata
+        new.computed = self.computed
+        new.method = getattr(self, 'method', None)
+        new.scale = getattr(self, 'scale', None)
+        new.var_name = self.var_name
+        new.var_units = self.var_units
+        new.var_long_name = self.var_long_name
+        new._grid = self._grid
+        return new
 
     def copy(self):
         """
@@ -1104,20 +1306,28 @@ class IMD(Compute):
             land_mask = None
         else:
             land_mask = self.land_mask.copy()
-        new = IMD(data, self.cat, self.start_day, self.end_day,
-                  self.no_days, self.lat_array.copy(), self.lon_array.copy(),
-                  land_mask)
+        new = self._new(data, self.lat_array.copy(), self.lon_array.copy(), land_mask)
         if self._source is not None:
             new._attach_source(self._source, self._data_pending, self._mask_pending)
-        # Preserve computed state and variable metadata
-        new.computed = self.computed
-        new.method = getattr(self, 'method', None)
-        new.scale = getattr(self, 'scale', None)
-        new.var_name = self.var_name
-        new.var_units = self.var_units
-        new.var_long_name = self.var_long_name
+        if self.cell_fraction is not None:
+            new.cell_fraction = self.cell_fraction.copy()
         return new
 
+
+# Temperature cells that fill_na() does not fill, by cell centre strictly
+# inside (west, east, south, north): Andaman and Nicobar, and the row at 7.5N (7-8N)
+_NO_FILL_AREAS = ((91.0, 94.0, 8.0, 13.0), (-np.inf, np.inf, 7.0, 8.0))
+
+
+def _no_fill_cells(cat, lon, lat):
+    """Cells (lon, lat) of temperature data inside _NO_FILL_AREAS."""
+    lon, lat = np.asarray(lon)[:, None], np.asarray(lat)[None, :]
+    out = np.zeros((lon.size, lat.size), dtype=bool)
+    if cat in ('tmin', 'tmax'):
+        for west, east, south, north in _NO_FILL_AREAS:
+            out |= ((lon > west + COORD_TOL) & (lon < east - COORD_TOL) &
+                    (lat > south + COORD_TOL) & (lat < north - COORD_TOL))
+    return out
 
 
 def open_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None):
@@ -1174,20 +1384,6 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
     data (``load``).
     """
 
-    # Parameters about IMD grid from:
-    # http://www.imdpune.gov.in/Clim_Pred_LRF_New/Grided_Data_Download.html
-    #######################################
-    lat_size_rain = 129
-    lon_size_rain = 135
-    lat_rain = np.linspace(6.5, 38.5, lat_size_rain)
-    lon_rain = np.linspace(66.5, 100.0, lon_size_rain)
-
-    lat_size_temp = 31
-    lon_size_temp = 31
-    lat_temp = np.linspace(7.5, 37.5, lat_size_temp)
-    lon_temp = np.linspace(67.5, 97.5, lon_size_temp)
-    #######################################
-
     # Full-year boundaries for loading complete year files
     full_start_day = f"{start_yr_int}-01-01"
     full_end_day = f"{end_yr_int}-12-31"
@@ -1199,15 +1395,12 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
     no_days = total_days(start_day, end_day)
 
     # Decide which variable we are looking into
-    if var_type == 'rain':
-        lat_size_class = lat_size_rain
-        lon_size_class = lon_size_rain
-    elif var_type == 'tmin' or var_type == 'tmax':
-        lat_size_class = lat_size_temp
-        lon_size_class = lon_size_temp
-    else:
+    # tuple(): an unhashable var_type gets the same error as before, not a TypeError
+    if var_type not in tuple(ARCHIVE_GRID):
         raise Exception("Error in variable type declaration."
                         "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
+    grid = GRIDS[ARCHIVE_GRID[var_type]]
+    lat_size_class, lon_size_class = grid.shape
 
     if lazy:
         files = [(fname_of_year(i), 366 if LeapYear(i) else 365)
@@ -1215,10 +1408,7 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
         source = GrdFiles(var_type, files, lat_size_class, lon_size_class,
                           total_days(full_start_day, start_day) - 1, no_days,
                           land_mask=True)
-        if var_type == 'rain':
-            data = IMD(None, var_type, start_day, end_day, no_days, lat_rain, lon_rain)
-        else:
-            data = IMD(None, var_type, start_day, end_day, no_days, lat_temp, lon_temp)
+        data = IMD(None, var_type, start_day, end_day, no_days, grid.lat, grid.lon)
         data._attach_source(source)
         return data
 
@@ -1257,44 +1447,11 @@ def _open_archive(var_type, start_day, end_day, start_yr_int, end_yr_int, fname_
         all_data = all_data[start_offset:start_offset + no_days, :, :]
 
     # Build land mask to identify valid grid cells
-    land_mask = _build_land_mask(var_type, all_data, no_days)
+    land_mask = land_mask_of(var_type, [all_data], no_days)
 
     # Create a IMD object
-    if var_type == 'rain':
-        data = IMD(all_data, 'rain', start_day, end_day, no_days,
-                   lat_rain, lon_rain, land_mask)
-    elif var_type == 'tmin':
-        data = IMD(all_data, 'tmin', start_day, end_day, no_days,
-                   lat_temp, lon_temp, land_mask)
-    elif var_type == 'tmax':
-        data = IMD(all_data, 'tmax', start_day, end_day, no_days,
-                   lat_temp, lon_temp, land_mask)
-    else:
-        raise Exception("Error in variable type declaration."
-                        "It must be 'rain'/'tmin'/'tmax'. Note: 'rain_gpm' is only available for real-time data.")
-
-    return data
-
-
-def _build_land_mask(var_type, all_data, no_days):
-    """
-    Land mask (True = valid cell) of archive data, shape (lon, lat). For
-    rain, ``all_data`` may also hold selected cells only (days first).
-    """
-    if var_type == 'rain':
-        # Part 1: mask -999 sentinel (ocean/outside India)
-        land_mask = (all_data[0] != -999.0)
-        # Part 2: mask cells with zero rainfall across all loaded days
-        # (boundary cells with no real observations, reported as 0.0)
-        # Only apply when data spans at least a full year to avoid
-        # false positives for short dry-season ranges
-        if no_days >= 365:
-            all_zero = (all_data == 0.0).all(axis=0)
-            land_mask = land_mask & ~all_zero
-    else:
-        # tmin/tmax: sentinel is the corner value (data[0, 0, 0])
-        land_mask = (all_data[0, :, :] != all_data[0, 0, 0])
-    return land_mask
+    return IMD(all_data, var_type, start_day, end_day, no_days,
+               grid.lat, grid.lon, land_mask)
 
 
 def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub_dir=False, proxies=None):
@@ -1434,10 +1591,9 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
             response.raise_for_status()
 
             # Saving file (only if it has exactly the expected size)
-            nlat, nlon = ARCHIVE_GRIDS[var_type]
             days_in_year = 366 if LeapYear(int(year)) else 365
             save_download(response.content, fname,
-                          days_in_year * nlat * nlon * 4,
+                          GRIDS[ARCHIVE_GRID[var_type]].file_size(days_in_year),
                           "{} {}".format(var_type, year),
                           empty_msg="{} {} is not published yet by IMD (the server "
                                     "returned an empty file). Nothing was saved."

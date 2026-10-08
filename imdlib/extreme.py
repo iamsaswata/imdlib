@@ -18,8 +18,12 @@ References:
 import numpy as np
 import os
 
+from imdlib.util import ARCHIVE_GRID, _missing, identify_grid
+
 # Path to bundled region mask
 _DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+# Grid of the region mask: the 1.0 degree archive temperature grid
+_MASK_GRID = ARCHIVE_GRID['tmax']
 
 
 def _load_region_mask():
@@ -88,6 +92,24 @@ def _daily_climatology(data, start_day, no_days, norm_start, norm_end, window=15
     return normals
 
 
+def _box_of(imd_obj, grid_shape):
+    """
+    (lon slice, lat slice) of the data in the 1.0 degree temperature grid of
+    shape ``grid_shape``: the whole grid, or the box of clipped data.
+    """
+    nlon, nlat = len(imd_obj.lon_array), len(imd_obj.lat_array)
+    if (nlon, nlat) != tuple(grid_shape):
+        try:
+            key, i, j = identify_grid(imd_obj)
+        except ValueError:
+            key = None
+        if key != _MASK_GRID:
+            raise ValueError('Heat/cold wave detection requires data on the 1.0 degree '
+                             'IMD temperature grid')
+        return slice(i, i + nlon), slice(j, j + nlat)
+    return slice(None), slice(None)
+
+
 def _detect_events(imd_obj, event_type, output, count, norm_start, norm_end):
     """
     Core detection logic for heat waves and cold waves.
@@ -137,13 +159,14 @@ def _detect_events(imd_obj, event_type, output, count, norm_start, norm_end):
             'Data spans {} years (< 30). Provide norm_start and norm_end '
             'for the reference period (minimum 10 years)'.format(data_years))
 
-    # --- Load region mask ---
+    # --- Load region mask (the part of it under clipped data) ---
     region_mask = _load_region_mask()
+    box = _box_of(imd_obj, region_mask.shape)
+    region_mask = region_mask[box]
 
-    # --- Prepare data: replace sentinel with NaN ---
-    nan_hint = imd_obj.data[0, 0, 0]
+    # --- Prepare data: replace the missing value (99.9) with NaN ---
     work_data = imd_obj.data.copy()
-    work_data[work_data == nan_hint] = np.nan
+    work_data[_missing(work_data, imd_obj.cat)] = np.nan
 
     # --- Compute daily normals ---
     # If norm period is within loaded data, use it directly.
@@ -158,8 +181,9 @@ def _detect_events(imd_obj, event_type, output, count, norm_start, norm_end):
     else:
         from imdlib.loader import load
         norm_obj = load(imd_obj.cat, norm_start, norm_end)
-        norm_data = norm_obj.data.copy()
-        norm_data[norm_data == norm_obj.data[0, 0, 0]] = np.nan
+        # Only the cells of this data (e.g. after clip())
+        norm_data = norm_obj._read_cells(*box)
+        norm_data[_missing(norm_data, norm_obj.cat)] = np.nan
         norm_start_day = norm_obj.start_day
         norm_no_days = norm_obj.no_days
 
