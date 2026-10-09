@@ -384,10 +384,11 @@ def _scan(root, sources, variables, years=None):
                 continue
             for p in sorted(folder.iterdir()):
                 name = p.name
-                if name.endswith('.grd.part'):
-                    stem = name[:-len('.grd.part')]
-                elif name.endswith('.grd'):
+                if name.endswith('.grd'):
                     stem = name[:-len('.grd')]
+                elif name.endswith('.part') and '.grd.' in name:
+                    # <stem>.grd.part or <stem>.grd.<id>.part
+                    stem = name.split('.grd.')[0]
                 else:
                     continue
                 if not _valid_stem(source, stem):

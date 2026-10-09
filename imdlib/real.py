@@ -5,7 +5,7 @@ import requests
 from imdlib.core import IMD
 from imdlib.lazy import GrdFiles
 from imdlib.util import get_filename_realtime
-from imdlib.util import GRIDS, REALTIME_GRID, REALTIME_URLS, save_download, read_grd
+from imdlib.util import GRIDS, REALTIME_GRID, REALTIME_URLS, save_download, read_grd, post
 from imdlib.util import REALTIME_GRIDS  # noqa: F401 (was importable from here)
 
 def open_real_data(var_type, start_dy, end_dy=None, file_dir=None):
@@ -202,7 +202,7 @@ def get_real_data(var_type, start_dy, end_dy=None, file_dir=None, proxies=None):
 
             data = {var: day.strftime("%d%m%Y")}
             # Requesting the dataset
-            response = requests.post(url, data=data, proxies=proxies)
+            response = post(url, data, "{} for date {}".format(var_type, str(day.date())), proxies=proxies)
             response.raise_for_status()
 
             # Saving file (only if it has exactly the expected size)
