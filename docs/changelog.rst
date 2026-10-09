@@ -2,6 +2,16 @@ Changelog History
 =================
 
 
+Unreleased
+----------
+
+* ``load()`` downloads several files at a time (``parallel=``, default 4), which is much faster.
+
+* Real-time days missing at IMD between available days are NaN, with a warning, instead of an error.
+
+* A download blocked by a web browser, or an empty reply for an older year, is no longer reported as data not published yet.
+
+
 v0.3.0 (07 October 2026)
 ------------------------
 

@@ -1,7 +1,9 @@
 import os
+import sys
 from collections import namedtuple
 import numpy as np
 import pandas as pd
+import requests
 from datetime import date
 from pathlib import Path
 
@@ -77,6 +79,41 @@ class DataNotAvailableError(Exception):
 
 class DownloadError(Exception):
     """A download failed, or the file received has the wrong size."""
+
+
+def in_browser():
+    """True when Python runs inside a web browser (Pyodide, JupyterLite)."""
+    return sys.platform == 'emscripten'
+
+
+def blocked_message(what):
+    """Why a download from IMD failed inside a web browser."""
+    return ("Could not download {}: the IMD server does not allow downloads from web "
+            "pages (its replies have no CORS headers), so Python running in a web browser "
+            "(JupyterLite, try-jupyter, Pyodide) cannot download IMD data. Use imdlib in a "
+            "regular Python installation, e.g. on your computer or in Google Colab."
+            .format(what))
+
+
+def post(url, data, what, **kwargs):
+    """
+    ``requests.post`` that explains downloads blocked by a web browser.
+
+    Browsers block IMD's replies (no CORS headers): depending on the
+    browser this is a connection error or an empty reply with HTTP status 0.
+    Both raise DownloadError, so they are never taken for an empty file
+    (data not published).
+    """
+    try:
+        response = requests.post(url, data=data, **kwargs)
+    except requests.exceptions.ConnectionError as e:
+        if in_browser():
+            raise DownloadError(blocked_message(what)) from e
+        raise
+    if response.status_code == 0:
+        response.close()
+        raise DownloadError(blocked_message(what))
+    return response
 
 
 def check_download_size(nbytes, expected, what, empty_msg=None):

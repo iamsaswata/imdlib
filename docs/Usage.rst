@@ -17,8 +17,9 @@ the earlier downloads.
     # Part of a year, given as 'YYYY-MM-DD'
     tmax = imd.load('tmax', '2023-04-01', '2023-06-30')
 
-Only files that are not in the cache are downloaded, one at a time. For each file, a line
-first shows ``waiting for IMD server`` with the elapsed time, then a progress bar:
+Only files that are not in the cache are downloaded, in parallel; set the number with
+``parallel=``. A line first shows ``waiting for IMD server`` with the elapsed time, then a
+progress bar:
 
 .. code-block:: text
 
@@ -58,7 +59,8 @@ covering 30\ :sup:`o`\ S-40\ :sup:`o`\ N, 50\ :sup:`o`\ E-110\ :sup:`o`\ E, incl
     gpm = imd.load('rain_gpm', '2026-10-01', '2026-10-05', source='realtime')
 
 The most recent days may not be published yet; requesting them raises an error that lists the
-missing days and suggests an earlier end date.
+missing days and suggests an earlier end date. Days missing at IMD between available days are
+NaN, with a warning.
 
 Cache
 -----

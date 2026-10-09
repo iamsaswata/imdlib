@@ -9,6 +9,7 @@ import functools
 import hashlib
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -146,7 +147,11 @@ def server(monkeypatch):
 @pytest.fixture
 def no_sleep(monkeypatch):
     waits = []
-    monkeypatch.setattr(loader.time, 'sleep', lambda s: waits.append(s))
+
+    def wait(cancel, seconds):
+        waits.append(seconds)
+        return cancel.is_set()
+    monkeypatch.setattr(loader, '_wait', wait)
     return waits
 
 
@@ -169,7 +174,7 @@ def test_first_load_downloads_only_missing(isolated, server):
     put_archive(isolated, 'tmax', 2018)
     srv = server(archive_server())
     data = imd.load('tmax', 2018, 2020, progress=False)
-    assert [c['data'] for c in srv.calls] == [{'maxtemp': '2020'}, {'maxtemp': '2019'}]
+    assert sorted(c['data']['maxtemp'] for c in srv.calls) == ['2019', '2020']
     assert all(c['url'] == ARCHIVE_URL['tmax'] for c in srv.calls)
     assert all(c['timeout'] >= 300 and c['stream'] for c in srv.calls)
     assert data.data.shape == (365 + 365 + 366, 31, 31)
@@ -203,13 +208,13 @@ def test_zero_byte_reply_is_not_published(isolated, server, capsys):
     srv = server(archive_server(published=2024))
     with pytest.raises(DataNotAvailableError, match=r"rain 2025 is not published yet") as e:
         imd.load('rain', 2024, 2025)
-    # Newest year first: one request, then stop
-    assert [c['data'] for c in srv.calls] == [{'rain': '2025'}]
+    # 2025 and 2024 are requested at the same time
+    assert {'rain': '2025'} in [c['data'] for c in srv.calls]
     assert "end=2024" in str(e.value)
     assert not (isolated / 'archive' / 'rain' / '2025.grd').exists()
     assert leftovers(isolated) == []
     assert 'archive/rain/2025.grd' not in cache.read_manifest(isolated)['files']
-    assert 'not available' in capsys.readouterr().out
+    assert 'rain 2025  not published yet (empty reply)' in capsys.readouterr().out
 
 
 def test_unpublished_year_reports_latest_available(isolated, server):
@@ -309,6 +314,151 @@ def test_server_error_is_retried_client_error_is_not(isolated, server, no_sleep)
     assert len(srv.calls) == 1
 
 
+def test_empty_reply_for_published_year_is_a_server_problem(isolated, server, no_sleep):
+    # 2018 was published years ago: an empty reply is retried, not "not published"
+    replies = [FakeResponse(b''), FakeResponse(year_bytes('rain', 2018))]
+    srv = server(lambda url, data: replies.pop(0))
+    imd.load('rain', 2018, progress=False)
+    assert len(srv.calls) == 2 and no_sleep == [5]
+
+    server(lambda url, data: FakeResponse(b''))
+    with pytest.raises(DownloadError) as e:
+        imd.load('rain', 2017, progress=False)
+    assert "after 4 attempts" in str(e.value)
+    assert "IMD returned an empty file, although rain 2017 is published" in str(e.value)
+    assert leftovers(isolated) == []
+
+
+def test_blocked_reply_in_browser_is_not_empty_data(isolated, server, no_sleep):
+    """Firefox gives a reply blocked by CORS as HTTP status 0 without content."""
+    srv = server(lambda url, data: FakeResponse(b'', status=0))
+    with pytest.raises(DownloadError) as e:
+        imd.load('rain', 2017, 2018, progress=False)
+    msg = str(e.value)
+    assert re.match("Could not download rain 201[78]: ", msg)
+    assert "CORS" in msg and "JupyterLite" in msg
+    assert "not published" not in msg
+    assert {'rain': '2018'} in [c['data'] for c in srv.calls]
+    assert no_sleep == []
+    assert leftovers(isolated) == []
+    assert not list(isolated.rglob('*.grd'))
+
+
+def test_connection_error_in_browser_is_not_retried(isolated, server, no_sleep, monkeypatch):
+    """Chromium gives a reply blocked by CORS as a connection error. In
+    the browser there are no threads: files are downloaded one at a time."""
+    monkeypatch.setattr(sys, 'platform', 'emscripten')
+    monkeypatch.setattr(loader, '_start_thread', lambda target: None)
+
+    def handler(url, data):
+        raise requests.exceptions.ConnectionError("Failed to execute 'send' on 'XMLHttpRequest'")
+    srv = server(handler)
+    with pytest.raises(DownloadError, match="does not allow downloads from web pages"):
+        imd.load('rain', 2017, 2018)
+    assert len(srv.calls) == 1 and no_sleep == []
+
+
+def test_without_threads_files_are_downloaded_one_at_a_time(isolated, server, monkeypatch,
+                                                            capsys):
+    monkeypatch.setattr(loader, '_start_thread', lambda target: None)
+    srv = server(archive_server(published=2024))
+    data = imd.load('tmax', 2022, 2024)
+    assert [c['data']['maxtemp'] for c in srv.calls] == ['2024', '2023', '2022']
+    assert data.data.shape == (365 + 365 + 366, 31, 31)
+    out = capsys.readouterr().out
+    assert "tmax 2022-2024  waiting for IMD server..." in out
+    assert "tmax 2022  downloaded 1.4 MB in" in out
+    assert "tmax 2022-2024  downloaded 4.2 MB in" in out
+
+    with pytest.raises(DataNotAvailableError, match="tmax 2025 is not published yet"):
+        imd.load('tmax', 2019, 2025, progress=False)
+    # Stops at the first year that is not published
+    assert srv.calls[-1]['data'] == {'maxtemp': '2025'}
+
+
+def test_downloads_run_in_parallel(isolated, server):
+    """IMD sends each file slowly: several files are downloaded at a time."""
+    lock = threading.Lock()
+    running, most = [0], [0]
+    handler = archive_server()
+
+    def slow(url, data):
+        with lock:
+            running[0] += 1
+            most[0] = max(most[0], running[0])
+        time.sleep(0.2)   # the server takes time to answer
+        with lock:
+            running[0] -= 1
+        return handler(url, data)
+    srv = server(slow)
+    t0 = time.monotonic()
+    data = imd.load('tmax', 2011, 2016, progress=False, parallel=3)
+    assert most[0] == 3
+    assert time.monotonic() - t0 < 6 * 0.2
+    assert len(srv.calls) == 6
+    assert data.data.shape[0] == sum(days_in(y) for y in range(2011, 2017))
+    assert sorted(cache.read_manifest(isolated)['files']) == \
+        ['archive/tmax/{}.grd'.format(y) for y in range(2011, 2017)]
+
+    # One at a time
+    most[0] = 0
+    imd.load('tmax', 2001, 2003, progress=False, parallel=1)
+    assert most[0] == 1
+    for bad in (0, 2.5, '4', None):
+        with pytest.raises(ValueError, match="parallel must be"):
+            imd.load('tmax', 2001, parallel=bad)
+
+
+class SlowResponse(FakeResponse):
+    """Sends its content in small chunks with pauses."""
+
+    def iter_content(self, chunk_size=1):
+        for i in range(0, len(self.content), 4096):
+            time.sleep(0.01)
+            yield self.content[i:i + 4096]
+
+
+def test_unpublished_year_stops_the_other_downloads(isolated, server):
+    def handler(url, data):
+        year = int(data['rain'])
+        if year == 2025:
+            time.sleep(0.05)
+            return FakeResponse(b'')
+        return SlowResponse(year_bytes('rain', year))
+    srv = server(handler)
+    t0 = time.monotonic()
+    with pytest.raises(DataNotAvailableError, match="rain 2025 is not published yet"):
+        imd.load('rain', 2010, 2025, progress=False)
+    # Stopped right away: no new downloads, the running ones were aborted
+    assert time.monotonic() - t0 < 2
+    assert len(srv.calls) == 4   # the default parallel=4
+    time.sleep(0.1)
+    assert leftovers(isolated) == []
+    assert not list(isolated.rglob('*.grd'))
+    assert cache.read_manifest(isolated)['files'] == {}
+
+
+def test_download_error_stops_the_other_downloads(isolated, server, no_sleep):
+    serve = archive_server()
+
+    def handler(url, data):
+        if data['maxtemp'] == '2018':
+            time.sleep(0.3)
+            return FakeResponse(status=404)
+        time.sleep(0.1)
+        return serve(url, data)
+    srv = server(handler)
+    with pytest.raises(DownloadError, match="tmax 2018.*404"):
+        imd.load('tmax', 2001, 2020, progress=False)
+    assert len(srv.calls) < 20
+    # Files completed before the error stay cached, with their manifest entry
+    cached = sorted(p.name for p in (isolated / 'archive' / 'tmax').glob('*.grd'))
+    assert cached and '2018.grd' not in cached
+    assert sorted(cache.read_manifest(isolated)['files']) == \
+        ['archive/tmax/' + name for name in cached]
+    assert leftovers(isolated) == []
+
+
 def test_manifest_entries(isolated, server):
     server(archive_server())
     imd.load('tmax', 2019, 2020, progress=False)
@@ -392,7 +542,7 @@ def realtime_server(empty=()):
 def test_realtime_native_grids(isolated, server, tmp_path):
     srv = server(realtime_server())
     t = imd.load('tmax', '2026-10-03', '2026-10-04', source='realtime', progress=False)
-    assert [c['data'] for c in srv.calls] == [{'max': '04102026'}, {'max': '03102026'}]
+    assert sorted(c['data']['max'] for c in srv.calls) == ['03102026', '04102026']
     assert t.data.shape == (2, 61, 61)
     assert len(t.lat_array) == 61 and t.lat_array[0] == 7.5 and t.lat_array[-1] == 37.5
     assert (isolated / 'realtime' / 'tmax' / '2026-10-03.grd').stat().st_size == 61 * 61 * 4
@@ -416,7 +566,7 @@ def test_realtime_gpm(isolated, server, tmp_path):
     srv = server(realtime_server())
     g = imd.load('rain_gpm', '2026-10-04', '2026-10-05', source='realtime', progress=False)
     assert srv.calls[0]['url'] == 'https://www.imdpune.gov.in/cmpg/Realtimedata/gpm/rain.php'
-    assert [c['data'] for c in srv.calls] == [{'rain': '05102026'}, {'rain': '04102026'}]
+    assert sorted(c['data']['rain'] for c in srv.calls) == ['04102026', '05102026']
     assert g.data.shape == (2, 241, 281) and g.cat == 'rain_gpm'
     assert (isolated / 'realtime' / 'rain_gpm' / '2026-10-04.grd').stat().st_size == 281 * 241 * 4
 
@@ -464,16 +614,55 @@ def test_realtime_recent_days_not_published(isolated, server):
     assert "2026-10-05 to 2026-10-06" in msg
     assert "may not be published yet" in msg and "2 days late" in msg
     assert "end='2026-10-04'" in msg
-    # Stops at the first available day; 10-03 is not requested
-    assert [c['data']['max'] for c in srv.calls] == ['06102026', '05102026', '04102026']
-    assert sorted(p.name for p in (isolated / 'realtime' / 'tmax').iterdir()) == ['2026-10-04.grd']
+    # Recent days: the earlier days are still downloaded (and cached)
+    assert sorted(c['data']['max'] for c in srv.calls) == ['03102026', '04102026',
+                                                           '05102026', '06102026']
+    assert sorted(p.name for p in (isolated / 'realtime' / 'tmax').iterdir()) == \
+        ['2026-10-03.grd', '2026-10-04.grd']
+    assert sorted(cache.read_manifest(isolated)['files']) == \
+        ['realtime/tmax/2026-10-03.grd', 'realtime/tmax/2026-10-04.grd']
+    srv = server(lambda url, data: pytest.fail("unexpected request"))
+    imd.load('tmax', '2026-10-03', '2026-10-04', source='realtime', progress=False)
 
 
 def test_realtime_old_day_not_available(isolated, server):
     srv = server(realtime_server(empty={'06102021'}))
     with pytest.raises(DataNotAvailableError, match="source='archive'"):
         imd.load('rain', '2021-10-05', '2021-10-06', source='realtime', progress=False)
-    assert len(srv.calls) == 1
+    assert {'rain': '06102021'} in [c['data'] for c in srv.calls]
+
+
+def test_realtime_gap_is_nan_with_warning(isolated, server):
+    """A day missing at IMD between available days is NaN, with a warning."""
+    srv = server(realtime_server(empty={'22092026'}))
+    with pytest.warns(UserWarning, match=r"not available at IMD for 2026-09-22; this day is NaN"):
+        data = imd.load('rain', '2026-09-20', '2026-09-25', source='realtime', progress=False)
+    assert len(srv.calls) == 6
+    # Cell reads (region, clip) give NaN for the day as well
+    assert np.isnan(data._source.read_cells(slice(0, 5), slice(0, 5))[2]).all()
+    values = data.data
+    assert values.shape == (6, 135, 129)
+    assert np.isnan(values[2]).all()
+    assert not np.isnan(values[[0, 1, 3, 4, 5]]).any()
+    # Same values for the other days as when loaded without the gap
+    other = imd.load('rain', '2026-09-23', '2026-09-25', source='realtime', offline=True)
+    assert np.array_equal(values[3:], other.data)
+    assert not (isolated / 'realtime' / 'rain' / '2026-09-22.grd').exists()
+
+
+def test_realtime_recent_gap_is_nan(isolated, server):
+    server(realtime_server(empty={'04102026'}))
+    with pytest.warns(UserWarning, match="2026-10-04"):
+        data = imd.load('tmax', '2026-10-03', '2026-10-05', source='realtime', progress=False)
+    assert np.isnan(data.data[1]).all() and not np.isnan(data.data[2]).any()
+
+
+def test_realtime_missing_period_stops(isolated, server):
+    """Days that are all empty (not on the server) stop the downloads."""
+    srv = server(realtime_server(empty={'{:02d}012015'.format(d) for d in range(1, 32)}))
+    with pytest.raises(DataNotAvailableError, match="limited period"):
+        imd.load('rain', '2015-01-01', '2015-01-31', source='realtime', progress=False)
+    assert len(srv.calls) < 31
 
 
 def test_realtime_future_days_refused(isolated, server):
@@ -503,18 +692,75 @@ def test_progress_false_is_silent(isolated, server, capsys):
     assert capsys.readouterr().out == ''
 
 
+def rain_files(*years):
+    root = cache.get_dir()
+    return [loader._File(root, 'archive', 'rain', y, str(y), 25_425_900, '', '')
+            for y in years]
+
+
 def test_progress_tty_bar(capsys, monkeypatch):
     monkeypatch.setattr(loader, '_is_tty', lambda: True)
     p = loader._Progress()
     assert p.mode == 'tty'
     p._full, p._empty, p._dots = '#', '-', '...'
-    p.start('rain 2023', 25_425_900)
-    p.update(12_712_950)
+    f, = rain_files(2023)
+    p.start([f])
+    p.waiting(f)
+    p.update(f, 12_712_950)
+    p.done(f, "downloaded 25.4 MB")
     p.finish()
     out = capsys.readouterr().out
     assert "\rrain 2023  waiting for IMD server... 0s" in out
     assert "\rrain 2023  ############------------  12.7 / 25.4 MB" in out
-    assert out.endswith('\n')
+    assert "files" not in out
+    assert re.search("\rrain 2023  downloaded 12.7 MB in 0 s *\n$", out)
+
+
+def test_progress_tty_several_files(capsys, monkeypatch):
+    monkeypatch.setattr(loader, '_is_tty', lambda: True)
+    p = loader._Progress()
+    p._full, p._empty, p._dots = '#', '-', '...'
+    a, b = files = rain_files(2018, 2017)
+    p.start(files)
+    for f in files:
+        p.waiting(f)
+    p.update(a, 25_425_900)
+    p.done(a, "downloaded 25.4 MB")
+    p.update(b, 100)
+    # The server sends nothing for a while
+    p._data_time -= 7
+    p._render()
+    p.message("rain 2017  retrying")
+    p.done(b, "failed")
+    p.finish()
+    out = capsys.readouterr().out
+    assert "rain 2017-2018  ############------------  25.4 / 50.9 MB  1 of 2 files" in out
+    assert "waiting for IMD server... 7s" in out
+    # Messages come on a line of their own, then the bar is drawn again
+    assert re.search("\rrain 2017  retrying *\n\rrain 2017-2018  ####", out)
+    assert "rain 2017  failed in" in out
+    assert re.search("\rrain 2017-2018  stopped: 1 of 2 files downloaded *\n$", out)
+
+
+def test_progress_group_label():
+    assert loader._group_label(rain_files(2017, 2018)) == 'rain 2017-2018'
+    assert loader._group_label(rain_files(2010, 2012, 2014)) == 'rain 2010, 2012, 2014'
+    assert loader._group_label(rain_files(*range(1901, 2020, 2))) == 'rain 60 files'
+
+
+@pytest.mark.parametrize('shell, notebook', [
+    ('ZMQInteractiveShell', True),        # Jupyter (ipykernel)
+    ('Shell', True),                      # Google Colab
+    ('Interpreter', True),                # JupyterLite, Pyodide kernel
+    ('XPythonShell', True),               # JupyterLite, Xeus kernel
+    ('TerminalInteractiveShell', False),  # IPython in a terminal
+    (None, False),                        # plain Python
+])
+def test_in_notebook(monkeypatch, shell, notebook):
+    import IPython
+    instance = None if shell is None else type(shell, (), {})()
+    monkeypatch.setattr(IPython, 'get_ipython', lambda: instance)
+    assert loader._in_notebook() is notebook
 
 
 def test_memory_warning():
@@ -587,11 +833,14 @@ def test_cache_clear_selected(isolated, server, capsys):
     imd.load('tmin', 2019, progress=False)
     part = isolated / 'archive' / 'tmax' / '2019.grd.part'
     part.write_bytes(b'junk')
+    part2 = isolated / 'archive' / 'tmax' / '2019.grd.0123abcd.part'
+    part2.write_bytes(b'junk')
     cache.clear('tmax', 2019)
     out = capsys.readouterr().out
-    assert "Removing archive/tmax: 2019 (2 files, 1.4 MB)" in out
+    assert "Removing archive/tmax: 2019 (3 files, 1.4 MB)" in out
     assert "Freed 1.4 MB." in out
-    assert not (isolated / 'archive' / 'tmax' / '2019.grd').exists() and not part.exists()
+    assert not (isolated / 'archive' / 'tmax' / '2019.grd').exists()
+    assert not part.exists() and not part2.exists()
     assert (isolated / 'archive' / 'tmax' / '2020.grd').exists()
     assert (isolated / 'archive' / 'tmin' / '2019.grd').exists()
     assert sorted(cache.read_manifest(isolated)['files']) == \
@@ -819,6 +1068,14 @@ def test_get_data_refuses_wrong_size(tmp_path, server):
     assert list((tmp_path / 'tmax').iterdir()) == []
 
 
+def test_get_data_blocked_by_browser(tmp_path, server):
+    server(lambda url, data: FakeResponse(b'', status=0))
+    with pytest.raises(DownloadError, match="CORS"):
+        imd.get_data('tmax', 2020, 2020, 'yearwise', str(tmp_path))
+    with pytest.raises(DownloadError, match="CORS"):
+        imd.get_real_data('tmax', '2026-10-05', None, str(tmp_path))
+
+
 def test_get_data_saves_valid_file(tmp_path, server):
     srv = server(archive_server())
     data = imd.get_data('tmax', 2020, 2020, 'yearwise', str(tmp_path))
@@ -882,12 +1139,13 @@ def test_heatwave_cached_normal_period_makes_no_requests(isolated, server, tmp_p
     assert cw.data.shape == (1, 31, 31)
 
 
-def test_heatwave_normal_period_errors_are_raised(isolated, server, tmp_path, monkeypatch):
+def test_heatwave_normal_period_errors_are_raised(isolated, server, tmp_path, monkeypatch,
+                                                  no_sleep):
     monkeypatch.chdir(tmp_path)
     put_archive(isolated, 'tmax', 2020)
     server(archive_server(empty=(2010,)))
     data = imd.load('tmax', 2020, offline=True)
-    with pytest.raises(DataNotAvailableError, match=r"tmax 2010 is not published yet"):
+    with pytest.raises(DownloadError, match=r"empty file, although tmax 2010 is published"):
         data.heatwave(norm_start=2001, norm_end=2010)
     server(lambda url, data: FakeResponse(b'\0' * 1000))
     with pytest.raises(DownloadError, match="expected exactly"):

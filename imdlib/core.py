@@ -7,7 +7,7 @@ import os
 import requests
 import xarray as xr
 from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename, parse_date_input
-from imdlib.util import GRIDS, ARCHIVE_GRID, ARCHIVE_URLS, save_download, read_grd
+from imdlib.util import GRIDS, ARCHIVE_GRID, ARCHIVE_URLS, save_download, read_grd, post
 from imdlib.util import ARCHIVE_GRIDS  # noqa: F401 (was importable from here)
 from imdlib.util import _missing, _check_same_cells, land_mask_of, mask_needs_all_days
 from imdlib.util import COORD_TOL, identify_grid
@@ -1587,7 +1587,7 @@ def get_data(var_type, start_yr, end_yr=None, fn_format=None, file_dir=None, sub
 
             data = {var: year}
             # Requesting the dataset
-            response = requests.post(url, data=data, proxies=proxies)
+            response = post(url, data, "{} {}".format(var_type, year), proxies=proxies)
             response.raise_for_status()
 
             # Saving file (only if it has exactly the expected size)

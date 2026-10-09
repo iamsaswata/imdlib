@@ -53,7 +53,8 @@ class GrdFiles:
     var : str
         'rain', 'rain_gpm', 'tmin' or 'tmax'.
     files : list of (path, days)
-        The files in time order and the number of days in each.
+        The files in time order and the number of days in each. A path of
+        None gives NaN for its days (a day missing at IMD).
     nlat, nlon : int
         Grid size.
     offset : int
@@ -66,7 +67,7 @@ class GrdFiles:
 
     def __init__(self, var, files, nlat, nlon, offset, no_days, land_mask):
         self.var = var
-        self.files = [(str(path), days) for path, days in files]
+        self.files = [(None if path is None else str(path), days) for path, days in files]
         self.nlat = nlat
         self.nlon = nlon
         self.offset = offset
@@ -96,7 +97,8 @@ class GrdFiles:
             skip = 0
             left -= n
         for path, days, _, _ in parts:
-            self._check(path, days)
+            if path is not None:
+                self._check(path, days)
         return parts
 
     def _check(self, path, days):
@@ -139,6 +141,10 @@ class GrdFiles:
             # Read only the rows of the band: one read per day, or one read
             # for all days if the band is the whole grid. This needs far
             # fewer file accesses than a memory map on slow file systems.
+            if path is None:
+                band = np.full((n, nrows, self.nlon), np.nan, dtype='<f4')
+                yield np.array(band.transpose(0, 2, 1)[:, lon_idx, lat_rel])
+                continue
             band = np.empty((n, nrows, self.nlon), dtype='<f4')
             buf = memoryview(band).cast('B')
             with open(path, 'rb', buffering=0) as f:
@@ -157,6 +163,10 @@ class GrdFiles:
         out = np.empty(self.shape)
         k = 0
         for path, days, first, n in self._parts():
+            if path is None:
+                out[k:k + n] = np.nan
+                k += n
+                continue
             values = np.fromfile(path, dtype='<f4', count=n * cells, offset=first * cells * 4)
             out[k:k + n] = values.reshape(n, self.nlat, self.nlon).transpose(0, 2, 1)
             k += n
