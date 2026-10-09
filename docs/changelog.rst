@@ -2,8 +2,8 @@ Changelog History
 =================
 
 
-Unreleased
-----------
+v0.3.1 (08 October 2026)
+------------------------
 
 * ``load()`` downloads several files at a time (``parallel=``, default 4), which is much faster.
 
