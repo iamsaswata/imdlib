@@ -2,6 +2,12 @@ Changelog History
 =================
 
 
+v0.4.0 (19 October 2026)
+------------------------
+
+* Added ``history()``: how a day, month, season or year at a place (or in all of India) compares with the same period in past years: departure from normal, rank among past years, and the last year as high or higher, and as low or lower.
+
+
 v0.3.1 (08 October 2026)
 ------------------------
 

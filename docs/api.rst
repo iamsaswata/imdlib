@@ -66,6 +66,14 @@ Regions
    imdlib.RegionNotFoundError
    imdlib.AmbiguousRegionError
 
+Compare with past years
+-----------------------
+
+.. autosummary::
+   :toctree: reference
+
+   imdlib.history
+
 Process gridded data
 --------------------
 

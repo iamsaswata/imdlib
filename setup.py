@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 # imdlib version
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 
 
 def readme():

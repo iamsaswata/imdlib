@@ -145,30 +145,7 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
     start_day, end_day, start_yr, end_yr = parse_date_input(start, end)
     root = cache.get_dir(cache_dir)
     today = date.today()
-
-    if source == 'archive':
-        _check_archive_period(var, start_yr, end_yr, root, today)
-        grid = GRIDS[ARCHIVE_GRID[var]]
-        url, field = ARCHIVE_URLS[var]
-        files = [_File(root, 'archive', var, year, str(year),
-                       grid.file_size(366 if LeapYear(year) else 365), url, field)
-                 for year in range(start_yr, end_yr + 1)]
-        # IMD publishes a year in the following year: an empty reply for an
-        # older year is a server problem, not a missing year
-        for f in files:
-            f.may_be_unpublished = f.period >= today.year - 1
-    else:
-        grid = GRIDS[REALTIME_GRID[var]]
-        url, field = REALTIME_URLS[var]
-        dates = pd.date_range(start_day, end_day, freq='D')
-        future = [d for d in dates if d.date() > today]
-        if future:
-            raise DataNotAvailableError(
-                "Real-time {} is not available for {}: these dates are in the future."
-                .format(var, _format_days(future)))
-        files = [_File(root, 'realtime', var, d, d.strftime('%Y-%m-%d'),
-                       grid.file_size(), url, field, d.strftime('%d%m%Y'))
-                 for d in dates]
+    files = _files(var, source, start_day, end_day, root, today)
 
     missing = [f for f in files if not f.is_cached()]
     if missing:
@@ -193,7 +170,9 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
             gaps = [f for f in unavailable if last is not None and f.period < last]
             at_end = [f for f in unavailable if f not in gaps]
             if at_end:
-                raise DataNotAvailableError(_realtime_message(var, at_end, today))
+                error = DataNotAvailableError(_realtime_message(var, at_end, today))
+                error.days = sorted(f.period for f in at_end)
+                raise error
             warnings.warn("Real-time {} is not available at IMD for {}; {} NaN.".format(
                 var, _format_days([f.period for f in gaps]),
                 'this day is' if len(gaps) == 1 else 'these days are'), stacklevel=2)
@@ -206,6 +185,34 @@ def load(var, start, end=None, *, source='archive', cache_dir=None, offline=Fals
         return _open_archive(var, start_day, end_day, start_yr, end_yr,
                              lambda year: paths[year], lazy=True)
     return _open_realtime(var, start_day, end_day, lambda day: paths[day], lazy=True)
+
+
+def _files(var, source, start_day, end_day, root, today):
+    """The files of a period (``_File`` list); checks that they can exist."""
+    if source == 'archive':
+        start_yr, end_yr = int(start_day[:4]), int(end_day[:4])
+        _check_archive_period(var, start_yr, end_yr, root, today)
+        grid = GRIDS[ARCHIVE_GRID[var]]
+        url, field = ARCHIVE_URLS[var]
+        files = [_File(root, 'archive', var, year, str(year),
+                       grid.file_size(366 if LeapYear(year) else 365), url, field)
+                 for year in range(start_yr, end_yr + 1)]
+        # IMD publishes a year in the following year: an empty reply for an
+        # older year is a server problem, not a missing year
+        for f in files:
+            f.may_be_unpublished = f.period >= today.year - 1
+        return files
+    grid = GRIDS[REALTIME_GRID[var]]
+    url, field = REALTIME_URLS[var]
+    dates = pd.date_range(start_day, end_day, freq='D')
+    future = [d for d in dates if d.date() > today]
+    if future:
+        raise DataNotAvailableError(
+            "Real-time {} is not available for {}: these dates are in the future."
+            .format(var, _format_days(future)))
+    return [_File(root, 'realtime', var, d, d.strftime('%Y-%m-%d'),
+                  grid.file_size(), url, field, d.strftime('%d%m%Y'))
+            for d in dates]
 
 
 class _File:
@@ -727,7 +734,9 @@ class _Progress:
             secs = time.monotonic() - self.t0
             got = sum(self.received.values())
             # Done unless downloads were stopped (empty replies are done)
-            if self.finished + self.empty == self.count:
+            if self.empty == self.count:
+                status = "not available"
+            elif self.finished + self.empty == self.count:
                 status = "downloaded {} in {:.0f} s".format(_format_size(got), secs)
             elif self.finished:
                 status = "stopped: {} of {} file{} downloaded".format(
