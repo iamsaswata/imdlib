@@ -19,6 +19,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 import requests
 
@@ -663,6 +664,14 @@ def test_realtime_missing_period_stops(isolated, server):
     with pytest.raises(DataNotAvailableError, match="limited period"):
         imd.load('rain', '2015-01-01', '2015-01-31', source='realtime', progress=False)
     assert len(srv.calls) < 31
+
+
+def test_realtime_missing_days_on_error_and_progress(isolated, server, capsys):
+    server(realtime_server(empty={'05102026', '06102026'}))
+    with pytest.raises(DataNotAvailableError) as e:
+        imd.load('tmax', '2026-10-05', '2026-10-06', source='realtime')
+    assert e.value.days == [pd.Timestamp('2026-10-05'), pd.Timestamp('2026-10-06')]
+    assert "tmax 2026-10-05 to 2026-10-06  not available" in capsys.readouterr().out
 
 
 def test_realtime_future_days_refused(isolated, server):

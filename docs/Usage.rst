@@ -487,6 +487,90 @@ The clipped object's ``spatial_mean()`` equals ``region()`` for the same region:
   form one area. This needs the ``pyshp`` and ``shapely`` packages.
 
 
+History
+=======
+
+``imd.history()`` compares rainfall or temperature for a day, month, season or year
+with the historical record. It shows how the period differs from normal, where it
+ranks among past years, and when it was last as high, or as low.
+
+.. code-block:: python
+
+    import imdlib as imd
+
+    imd.history('rain', '2024-07-14', district='Pune')       # a day
+    imd.history('tmax', '2024-05', district='Pune')          # a month
+    imd.history('rain', 2024, season='monsoon', state='Kerala')
+    imd.history('rain', 2024, season='monsoon')              # all of India
+
+The location is given in the same way as in ``region()``, one location at a time. If
+no location is given, the calculation is for all of India.
+
+The result is a ``pandas.DataFrame``, with the location at the top left. For example:
+
+.. code-block:: text
+
+    Pune (Maharashtra)  value  normal  departure  departure_pct  rank  of      years  last_higher  last_lower
+    date
+    2024-07-14           26.4     8.9       17.5          196.2     7  55  1971-2025         2022        2023
+
+The columns describe the value in its historical context:
+
+- ``days``: for a month, season or year, the number of days compared; fewer than the
+  whole period if only a part of it is compared, e.g. the current month so far.
+- ``value``: rainfall total or mean temperature for the period, rounded to 0.1 like
+  the other values.
+- ``normal``: average for the same period over the climatological normal years. By
+  default, this is 1971-2020 for rainfall and 1991-2020 for temperature. A different
+  period can be given with ``normal=(start_year, end_year)``, for example
+  ``normal=(1981, 2010)``.
+- ``departure``: difference between the value and normal.
+- ``departure_pct``: percentage departure from normal. This is given for rainfall;
+  temperature departures are given only as ``departure``.
+- ``rank``: historical rank, with 1 for the highest value.
+- ``of``: number of years in the ranking.
+- ``years``: range of years used for the historical comparison.
+- ``last_higher``: most recent earlier year with an equal or higher value.
+- ``last_lower``: most recent earlier year with an equal or lower value.
+
+An empty ``last_higher`` or ``last_lower`` means that no such earlier year exists.
+
+By default, the historical comparison starts with the beginning of the normal period
+and continues through the latest available year. Use ``since=1950`` to start in 1950,
+or ``since='all'`` to use the full IMD record.
+
+Choosing the time scale
+-----------------------
+
+By default, there is one row for each day, month, season or year, as the dates are
+given: a month gives one row. ``by=`` sets the time scale of the rows and can be
+``'day'``, ``'month'``, ``'season'`` or ``'year'``. For example:
+
+.. code-block:: python
+
+    imd.history('rain', '2024-07', district='Pune', by='day')
+
+returns one row for each day of July 2024.
+
+The seasons are:
+
+- ``'winter'``: January-February
+- ``'summer'``: March-May
+- ``'monsoon'``: June-September
+- ``'postmonsoon'``: October-December
+
+Historical data
+---------------
+
+The first call may need to download historical IMD data, which for rainfall is about
+1.4 GB. The files are cached and reused by later calls.
+
+Use ``offline=True`` to check which required files are missing without downloading
+them.
+
+For recent dates, ``history()`` uses provisional real-time IMD data.
+
+
 Climatology & Anomaly
 =====================
 

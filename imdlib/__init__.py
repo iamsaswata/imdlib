@@ -3,6 +3,7 @@ from imdlib.util import LeapYear, get_lat_lon, total_days, get_filename, get_fil
 from imdlib.util import DataNotAvailableError, DownloadError
 from imdlib.real import open_real_data, get_real_data
 from imdlib.loader import load
+from imdlib.history import history
 from imdlib import cache
 from imdlib import regions
 from imdlib.regions import RegionError, RegionNotFoundError, AmbiguousRegionError
